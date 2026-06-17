@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talabat Fraud Hunter</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #FF5900;
+  --primary-dark: #e04f00;
+  --accent: #411517;
+  --secondary: #F4EDE3;
+  --highlight: #CFFF00;
+  --bg: #FAF8F5;
+  --card-bg: #FFFFFF;
+  --text: #2D2D2D;
+  --text-muted: #7A7A7A;
+  --border: #E8E3DC;
+  --success: #22C55E;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 260px;
+  background: var(--accent); color: white; z-index: 100;
+  display: flex; flex-direction: column; transition: transform 0.3s;
+}
+.sidebar-header { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.logo-area { display: flex; align-items: center; gap: 12px; }
+.talabat-logo { width: 42px; height: 42px; }
+.logo-text { font-weight: 800; font-size: 18px; letter-spacing: -0.5px; }
+.logo-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; font-weight: 400; }
+
+.nav-menu { flex: 1; padding: 16px 12px; overflow-y: auto; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border-radius: 10px; cursor: pointer; transition: all 0.2s;
+  font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); margin-bottom: 4px;
+}
+.nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+.nav-item.active { background: var(--primary); color: white; font-weight: 600; }
+.nav-item .icon { font-size: 18px; width: 24px; text-align: center; }
+.nav-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 12px 8px; }
+
+.main { margin-left: 260px; padding: 0; min-height: 100vh; }
+.topbar {
+  position: sticky; top: 0; z-index: 50; background: rgba(250,248,245,0.9);
+  backdrop-filter: blur(10px); border-bottom: 1px solid var(--border);
+  padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+}
+.topbar-title { font-size: 20px; font-weight: 700; color: var(--accent); }
+.topbar-subtitle { font-size: 12px; color: gray; font-weight: 400; margin-top: 2px; }
+.topbar-actions { display: flex; gap: 10px; align-items: center; }
+.topbar-time { font-size: 12px; color: var(--text-muted); }
+
+.dropdown-wrap { position: relative; display: inline-block; }
+.dropdown-btn { position: relative; }
+.dropdown-menu {
+  display: none; position: absolute; right: 0; top: 100%; margin-top: 6px;
+  background: white; border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 200px; z-index: 60;
+  overflow: hidden;
+}
+.dropdown-menu.show { display: block; }
+.dropdown-item {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+  font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.15s;
+  border: none; background: none; width: 100%; text-align: left; font-family: 'Inter', sans-serif; color: var(--text);
+}
+.dropdown-item:hover { background: var(--secondary); }
+.dropdown-item .dd-icon { font-size: 16px; }
+
+.content { padding: 24px 32px; }
+.page { display: none; }
+.page.active { display: block; }
+
+.card {
+  background: var(--card-bg); border-radius: 16px; padding: 24px;
+  border: 1px solid var(--border); margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.card-title { font-size: 14px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--card-bg); border-radius: 14px; padding: 20px;
+  border: 1px solid var(--border); position: relative; overflow: hidden;
+}
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+.stat-card.orange::before { background: var(--primary); }
+.stat-card.red::before { background: var(--danger); }
+.stat-card.green::before { background: var(--success); }
+.stat-card.lime::before { background: var(--highlight); }
+.stat-icon { font-size: 28px; margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: 800; color: var(--accent); }
+.stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-top: 4px; }
+
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.chart-container { position: relative; height: 300px; }
+
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th {
+  background: var(--primary); color: white; padding: 12px 14px;
+  text-align: left; font-weight: 600; position: sticky; top: 0;
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px;
+  white-space: nowrap; cursor: pointer; user-select: none;
+}
+.data-table th:hover { background: var(--primary-dark); }
+.data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.data-table tr:hover td { background: #FFF8F5; }
+.data-table tr:nth-child(even) td { background: var(--secondary); }
+.data-table tr:nth-child(even):hover td { background: #F0E8DC; }
+.table-wrap { overflow-x: auto; max-height: 600px; overflow-y: auto; border-radius: 12px; border: 1px solid var(--border); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 10px; font-weight: 600;
+  font-size: 14px; cursor: pointer; border: none; transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-accent { background: var(--accent); color: white; }
+.btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+.btn-success { background: var(--success); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-slack { background: #4A154B; color: white; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+.badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-danger { background: #FEE2E2; color: #DC2626; }
+.badge-success { background: #DCFCE7; color: #16A34A; }
+.badge-warning { background: #FEF3C7; color: #D97706; }
+
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: 16px; padding: 40px;
+  text-align: center; cursor: pointer; transition: all 0.3s; background: #FAFAFA;
+}
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--primary); background: #FFF5F0; }
+.upload-zone .icon { font-size: 48px; margin-bottom: 12px; }
+.upload-zone p { color: var(--text-muted); font-size: 14px; }
+
+.folder-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.folder-tab {
+  padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 2px solid var(--border); transition: all 0.2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.folder-tab.active { border-color: var(--primary); background: #FFF5F0; color: var(--primary); }
+.folder-tab:hover { border-color: var(--primary); }
+.folder-tab input[type="file"] { display: none; }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+  display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: white; border-radius: 20px; padding: 32px; width: 90%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.modal h2 { font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.modal label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; margin-top: 14px; }
+.modal input, .modal textarea {
+  width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px;
+  font-size: 14px; font-family: 'Inter', sans-serif; transition: border-color 0.2s;
+}
+.modal input:focus, .modal textarea:focus { outline: none; border-color: var(--primary); }
+.modal textarea { min-height: 100px; resize: vertical; }
+.modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+
+.log-console {
+  background: #1a1a2e; color: #00ff88; border-radius: 12px; padding: 16px;
+  font-family: 'Fira Code', 'Consolas', monospace; font-size: 12px;
+  max-height: 300px; overflow-y: auto; line-height: 1.6;
+}
+.log-console .log-line { padding: 2px 0; }
+.log-console .log-line::before { content: '> '; color: var(--primary); }
+
+.progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 16px 0; }
+.progress-bar .fill {
+  height: 100%; background: linear-gradient(90deg, var(--primary), var(--highlight));
+  border-radius: 3px; transition: width 0.5s; animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  padding: 14px 20px; border-radius: 12px; color: white; font-size: 14px;
+  font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.15); animation: slideIn 0.3s;
+  display: flex; align-items: center; gap: 10px; max-width: 400px;
+}
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+.toast.info { background: var(--primary); }
+@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+.file-list { list-style: none; }
+.file-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; gap: 16px;
+}
+.file-item .name { font-weight: 500; flex: 1; }
+.file-item .meta { color: var(--text-muted); font-size: 11px; text-align: right; white-space: nowrap; }
+
+.settings-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.settings-row input { margin-bottom: 0; }
+
+.search-bar {
+  display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+}
+.search-bar input, .search-bar select {
+  padding: 8px 14px; border: 2px solid var(--border); border-radius: 8px;
+  font-size: 13px; font-family: 'Inter', sans-serif; transition: border-color 0.2s;
+}
+.search-bar input:focus, .search-bar select:focus { outline: none; border-color: var(--primary); }
+.search-bar input { flex: 1; min-width: 180px; }
+
+.active-filter-bar {
+  background: #FFF5F0; border: 2px solid var(--primary); border-radius: 10px;
+  padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center;
+  justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--primary);
+}
+.active-filter-bar .clear-btn {
+  background: var(--primary); color: white; border: none; padding: 4px 14px;
+  border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+}
+
+/* Celebration popup */
+.celebration-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500;
+  display: none; align-items: center; justify-content: center; backdrop-filter: blur(6px);
+}
+.celebration-overlay.show { display: flex; }
+.celebration-box {
+  background: white; border-radius: 24px; padding: 48px 60px; text-align: center;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.3); max-width: 500px; position: relative;
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.celebration-emojis { font-size: 64px; margin-bottom: 16px; animation: bounce 1s infinite; }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+.celebration-title { font-size: 28px; font-weight: 900; color: var(--success); margin-bottom: 8px; }
+.celebration-msg { font-size: 16px; color: var(--text-muted); margin-bottom: 24px; }
+.confetti-piece {
+  position: fixed; width: 10px; height: 10px; border-radius: 2px;
+  animation: confettiFall 3s linear forwards; z-index: 501; pointer-events: none;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-area">
+      <img src="/assets/talabat_logo.png" class="talabat-logo" alt="Talabat" style="width: 42px; height: 42px; object-fit: contain; border-radius: 8px;" />
+      <div>
+        <div class="logo-text">Fraud Hunter</div>
+        <div class="logo-sub">talabat</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-menu">
+    <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+      <span class="icon">&#x1F4CA;</span> Dashboard
+    </div>
+    <div class="nav-item" data-page="fraud-table" onclick="showPage('fraud-table')">
+      <span class="icon">&#x1F6A8;</span> Potential Fraud
+    </div>
+    <div class="nav-item" data-page="emails" onclick="showPage('emails')">
+      <span class="icon">&#x1F4E7;</span> Suspicious Emails
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-page="upload" onclick="showPage('upload')">
+      <span class="icon">&#x1F4C1;</span> Upload Data
+    </div>
+    <div class="nav-item" data-page="run" onclick="showPage('run')">
+      <span class="icon">&#x26A1;</span> Run Analysis
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-page="share" onclick="showPage('share')">
+      <span class="icon">&#x1F4E4;</span> Share & Export
+    </div>
+    <div class="nav-item" data-page="settings" onclick="handleSettingsNavigation(event)">
+      <span class="icon">&#x2699;&#xFE0F;</span> Settings
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="pageTitle">Fraud Analysis Dashboard</div>
+      <div class="topbar-subtitle">Powered by Talabat Platform - UAE Finance</div>
+    </div>
+    <div class="topbar-actions">
+      <span class="topbar-time" id="lastUpdated"></span>
+      <button class="btn btn-outline btn-sm" onclick="loadResults()">&#x1F504; Refresh</button>
+      <div class="dropdown-wrap">
+        <button class="btn btn-primary btn-sm dropdown-btn" onclick="toggleDownloadMenu(event)">&#x2B07;&#xFE0F; Download &#x25BE;</button>
+        <div class="dropdown-menu" id="downloadMenu">
+          <button class="dropdown-item" onclick="downloadExcel();closeDownloadMenu();">
+            <span class="dd-icon">&#x1F4CA;</span> Excel (.xlsx)
+          </button>
+          <button class="dropdown-item" onclick="downloadPDF();closeDownloadMenu();">
+            <span class="dd-icon">&#x1F4C4;</span> PDF (.pdf)
+          </button>
+          <button class="dropdown-item" onclick="exportGoogleSheets();closeDownloadMenu();">
+            <span class="dd-icon">&#x1F4D7;</span> Google Sheets
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div id="activeFilterBar" style="display:none;" class="active-filter-bar">
+        <span id="activeFilterText"></span>
+        <button class="clear-btn" onclick="clearDrillDown()">&#x2716; Clear Filter</button>
+      </div>
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card orange">
+          <div class="stat-icon">&#x1F4CB;</div>
+          <div class="stat-value" id="statDetailedTotal">--</div>
+          <div class="stat-label">Total Orders (Detailed Report)</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon">&#x1F6A8;</div>
+          <div class="stat-value" id="statPotentialFraud">--</div>
+          <div class="stat-label">Potential Fraud</div>
+        </div>
+        <div class="stat-card lime">
+          <div class="stat-icon">&#x1F4B0;</div>
+          <div class="stat-value" id="statFraudValue">--</div>
+          <div class="stat-label">Potential Fraud Amount (AED)</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">&#x1F4C8;</div>
+          <div class="stat-value" id="statFraudPct">--</div>
+          <div class="stat-label">Potential Fraud %</div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="card">
+          <div class="card-title">&#x1F4CA; Potential Fraud by Customer Group</div>
+          <div class="chart-container"><canvas id="chartGroup"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">&#x1F4C5; Potential Fraud by Date</div>
+          <div class="chart-container"><canvas id="chartDate"></canvas></div>
+        </div>
+      </div>
+
+      <div class="charts-grid" style="margin-top:20px;">
+        <div class="card">
+          <div class="card-title">&#x1F3E2; Potential Fraud by Restaurant (Top 10)</div>
+          <div class="chart-container"><canvas id="chartRestaurant"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">&#x1F4CD; Potential Fraud by Branch (Top 10)</div>
+          <div class="chart-container"><canvas id="chartBranch"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POTENTIAL FRAUD TABLE PAGE -->
+    <div class="page" id="page-fraud-table">
+      <div class="card">
+        <div class="card-title">&#x1F6A8; Potential Fraud Orders</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+          Analyzed by: Total Sale &ge; AED 10,000 and/or Orders &ge; 1,000, email used multiple times across flagged orders, or duplicate Total Sale with same Restaurant ID and same Customer Email.
+        </p>
+        <div class="search-bar">
+          <input type="text" id="fraudSearchRestaurant" placeholder="Search Restaurant..." oninput="filterFraudTable()">
+          <input type="text" id="fraudSearchRID" placeholder="Restaurant ID..." oninput="filterFraudTable()">
+          <input type="text" id="fraudSearchDate" placeholder="Date (DD-MMM-YYYY)..." oninput="filterFraudTable()">
+          <input type="text" id="fraudSearchEmail" placeholder="Customer Email..." oninput="filterFraudTable()">
+          <button class="btn btn-sm btn-outline" onclick="clearFraudFilters()">Clear</button>
+        </div>
+        <div class="table-wrap" id="fraudTableWrap">
+          <table class="data-table" id="fraudTable">
+            <thead><tr>
+              <th onclick="sortFraudTable('serial')">#</th>
+              <th onclick="sortFraudTable('restaurantId')">Restaurant Id</th>
+              <th onclick="sortFraudTable('branchId')">Branch Id</th>
+              <th onclick="sortFraudTable('restaurant')">Restaurant</th>
+              <th onclick="sortFraudTable('branch')">Branch</th>
+              <th onclick="sortFraudTable('orderId')">Order Id</th>
+              <th onclick="sortFraudTable('dateTime')">Date / Time</th>
+              <th onclick="sortFraudTable('paymentMethod')">Payment Method</th>
+              <th onclick="sortFraudTable('status')">Status</th>
+              <th onclick="sortFraudTable('serviceType')">Service Type</th>
+              <th onclick="sortFraudTable('subTotal')">SubTotal</th>
+              <th onclick="sortFraudTable('totalSale')">Total Sale</th>
+              <th onclick="sortFraudTable('netPayment')">Net Payment</th>
+              <th onclick="sortFraudTable('customerGroup')">Customer Group</th>
+              <th onclick="sortFraudTable('customerAccount')">Customer Account</th>
+              <th onclick="sortFraudTable('customerEmail')">Customer Email</th>
+              <th onclick="sortFraudTable('reasons')">Potential Fraud Reasons</th>
+            </tr></thead>
+            <tbody id="fraudTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUSPICIOUS EMAILS PAGE -->
+    <div class="page" id="page-emails">
+      <div class="card">
+        <div class="card-title">&#x1F4E7; Top 20 Suspicious Emails (from Checkout Data)</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+          Emails analyzed directly from checkout payment data. Ranked by suspicion score (frequency + consecutive burst patterns).
+        </p>
+        <div class="search-bar">
+          <input type="text" id="emailSearch" placeholder="Search Customer Email (partial match)..." oninput="filterEmailTable()" style="flex:2;">
+          <button class="btn btn-sm btn-outline" onclick="document.getElementById('emailSearch').value='';filterEmailTable();">Clear</button>
+        </div>
+        <div class="table-wrap" id="emailTableWrap">
+          <table class="data-table" id="emailTable">
+            <thead><tr>
+              <th onclick="sortEmailTable('rank')">Rank</th>
+              <th onclick="sortEmailTable('email')">Customer Email</th>
+              <th onclick="sortEmailTable('count')">Order Count</th>
+              <th onclick="sortEmailTable('totalAmount')">Total Amount</th>
+              <th onclick="sortEmailTable('maxBurst')">Max Burst</th>
+              <th onclick="sortEmailTable('firstSeen')">First Seen</th>
+              <th onclick="sortEmailTable('lastSeen')">Last Seen</th>
+            </tr></thead>
+            <tbody id="emailTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-title">&#x1F4CA; Email Frequency Distribution</div>
+        <div class="chart-container" style="height:350px;"><canvas id="chartEmails"></canvas></div>
+      </div>
+    </div>
+
+    <!-- UPLOAD PAGE -->
+    <div class="page" id="page-upload">
+      <div class="card">
+        <div class="card-title">&#x1F4C1; Upload Data Files</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+          Click any folder icon below to upload files directly, or use the drag & drop zone. After uploading, go to "Run Analysis" to process the data.
+        </p>
+        <div class="folder-tabs">
+          <div class="folder-tab active" data-folder="detailed-reports" onclick="selectFolder(this)">
+            &#x1F4C4; Detailed Reports
+            <input type="file" id="fileInputDetailedReports" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('detailed-reports', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputDetailedReports').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
+          </div>
+          <div class="folder-tab" data-folder="checkout" onclick="selectFolder(this)">
+            &#x1F4B3; Checkout
+            <input type="file" id="fileInputCheckout" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('checkout', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputCheckout').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
+          </div>
+          <div class="folder-tab" data-folder="ax365" onclick="selectFolder(this)">
+            &#x1F4CA; AX365
+            <input type="file" id="fileInputAx365" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('ax365', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputAx365').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
+          </div>
+          <div class="folder-tab" data-folder="branch-inquiry" onclick="selectFolder(this)">
+            &#x1F3E2; Branch Inquiry
+            <input type="file" id="fileInputBranchInquiry" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('branch-inquiry', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputBranchInquiry').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
+          </div>
+        </div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+             ondragover="event.preventDefault();this.classList.add('dragover')"
+             ondragleave="this.classList.remove('dragover')"
+             ondrop="handleDrop(event)">
+          <div class="icon">&#x1F4C2;</div>
+          <p><strong>Click to browse</strong> or drag & drop files here</p>
+          <p style="font-size:12px;margin-top:8px;">Supports .xlsx and .csv files (up to 500MB)</p>
+        </div>
+        <input type="file" id="fileInput" multiple accept=".xlsx,.csv" style="display:none" onchange="uploadFiles(this.files)">
+        <div id="uploadProgress" style="display:none;">
+          <div class="progress-bar"><div class="fill" id="uploadFill" style="width:0%"></div></div>
+          <p id="uploadStatus" style="font-size:13px;color:var(--text-muted);"></p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">&#x1F4C2; Current Files</div>
+        <div id="fileListContainer"><p style="color:var(--text-muted);font-size:13px;">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- RUN ANALYSIS PAGE -->
+    <div class="page" id="page-run">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:64px;margin-bottom:16px;">&#x26A1;</div>
+        <h2 style="margin-bottom:8px;">Run Fraud Analysis</h2>
+        <p style="color:var(--text-muted);max-width:500px;margin:0 auto 24px;">
+          Process all uploaded data files, apply fraud detection rules, and generate the analysis report.
+        </p>
+        <button class="btn btn-primary" id="btnRun" onclick="runAnalysis()" style="font-size:16px;padding:14px 36px;">
+          &#x1F680; Run Analysis
+        </button>
+        <div id="runProgress" style="display:none;margin-top:24px;text-align:left;">
+          <div class="progress-bar"><div class="fill" id="runFill" style="width:0%"></div></div>
+          <div class="log-console" id="runLog"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHARE & EXPORT PAGE -->
+    <div class="page" id="page-share">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
+        <div class="card" style="text-align:center;">
+          <div style="font-size:48px;margin-bottom:12px;">&#x1F4E5;</div>
+          <h3>Download Excel</h3>
+          <p style="color:var(--text-muted);font-size:13px;margin:8px 0 20px;">Full fraud analysis Excel with all sheets.</p>
+          <button class="btn btn-primary" onclick="downloadExcel()">&#x2B07;&#xFE0F; Excel</button>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:48px;margin-bottom:12px;">&#x1F4C4;</div>
+          <h3>Download PDF</h3>
+          <p style="color:var(--text-muted);font-size:13px;margin:8px 0 20px;">Dashboard snapshot as a PDF report.</p>
+          <button class="btn btn-accent" onclick="downloadPDF()">&#x1F4C4; PDF</button>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:48px;margin-bottom:12px;">&#x1F4AC;</div>
+          <h3>Share to Slack</h3>
+          <p style="color:var(--text-muted);font-size:13px;margin:8px 0 20px;">Send report to a Slack channel.</p>
+          <button class="btn btn-slack" onclick="openSlackModal()">&#x1F4AC; Slack</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-title">&#x1F4E7; Share Top 20 Emails via Email</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+          Send the top 20 suspicious emails from Dashboard 2 automatically via email.
+        </p>
+        <div class="settings-row">
+          <div><label>FROM</label><input id="emailFrom" placeholder="your.email@talabat.com"></div>
+          <div><label>TO</label><input id="emailTo" placeholder="recipient@talabat.com"></div>
+        </div>
+        <div class="settings-row" style="margin-top:10px;">
+          <div><label>CC</label><input id="emailCc" placeholder="cc@talabat.com (optional)"></div>
+          <div><label>Subject</label><input id="emailSubject" placeholder="Fraud Alert - Suspicious Customer Emails"></div>
+        </div>
+        <label>Email Body</label>
+        <textarea id="emailBody">Dear Team,
+
+Please verify the emails below that have suspicious transactions.
+
+Regards,
+UAE Talabat Finance</textarea>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" id="btnSendEmail" onclick="sendEmail()">&#x1F4E8; Send Email</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div class="page" id="page-settings">
+      <div class="card">
+        <div class="card-title">&#x1F464; User Settings</div>
+        <div class="settings-row">
+          <div>
+            <label>Your Name (for upload tracking)</label>
+            <input id="uploaderName" placeholder="e.g. John Doe">
+          </div>
+          <div>
+            <label>Your Role</label>
+            <select id="userRole" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;" onchange="setRole(this.value)">
+              <option value="owner">Owner (Full Access)</option>
+              <option value="editor">Editor (Read/Write)</option>
+              <option value="viewer">Viewer (Read-Only)</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-sm btn-outline" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">&#x1F517; Public Access Link</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">
+          Generate a guest-accessible link for stakeholders to view the dashboard without login.
+        </p>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input id="publicLink" readonly style="flex:1;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;background:#f9f9f9;" placeholder="Click Generate to create a link">
+          <button class="btn btn-sm btn-primary" onclick="generatePublicLink()">Generate</button>
+          <button class="btn btn-sm btn-outline" onclick="copyPublicLink()">Copy</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">&#x1F4AC; Slack Configuration</div>
+        <label>Slack Bot Token</label>
+        <input id="slackToken" type="password" placeholder="xoxb-your-slack-bot-token">
+        <label>Default Channel ID</label>
+        <input id="slackChannel" value="C085XTZTC05" placeholder="C085XTZTC05">
+        <div style="margin-top:12px;">
+          <button class="btn btn-sm btn-outline" onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">&#x1F4E7; SMTP Email Configuration</div>
+        <div class="settings-row">
+          <div><label>SMTP Host</label><input id="smtpHost" placeholder="smtp.office365.com"></div>
+          <div><label>SMTP Port</label><input id="smtpPort" placeholder="587"></div>
+        </div>
+        <div class="settings-row" style="margin-top:10px;">
+          <div><label>SMTP User</label><input id="smtpUser" placeholder="your.email@talabat.com"></div>
+          <div><label>SMTP Password</label><input id="smtpPass" type="password" placeholder="app password"></div>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-sm btn-outline" onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slack Modal -->
+<div class="modal-overlay" id="slackModal">
+  <div class="modal">
+    <h2>&#x1F4AC; Share to Slack</h2>
+    <label>Channel ID</label>
+    <input id="slackModalChannel" value="C085XTZTC05">
+    <label>Message</label>
+    <textarea id="slackModalMessage" placeholder="&#x1F6A8; Fraud Analysis Report - please review the attached Excel file for potential fraud orders."></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeSlackModal()">Cancel</button>
+      <button class="btn btn-slack" onclick="shareToSlack()">&#x1F680; Send to Slack</button>
+    </div>
+  </div>
+</div>
+
+<!-- Celebration popup -->
+<div class="celebration-overlay" id="celebrationOverlay">
+  <div class="celebration-box">
+    <div class="celebration-emojis">&#x1F389;&#x1F973;&#x1F38A;</div>
+    <div class="celebration-title">No Fraud Detected!</div>
+    <div class="celebration-msg">All transactions look clean. Happy party poopers!</div>
+    <button class="btn btn-success" onclick="closeCelebration()" style="margin-top:8px;">&#x1F44D; Awesome!</button>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+let dashboardData = null;
+let charts = {};
+let currentFolder = 'detailed-reports';
+let activeDrillDown = null;
+let fraudSortField = 'totalSale';
+let fraudSortAsc = false;
+let emailSortField = 'count';
+let emailSortAsc = false;
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector(`.nav-item[data-page="${page}"]`).classList.add('active');
+  const titles = {
+    'dashboard': 'Fraud Analysis Dashboard', 'fraud-table': 'Potential Fraud Orders',
+    'emails': 'Suspicious Customer Emails', 'upload': 'Upload Data Files',
+    'run': 'Run Analysis', 'share': 'Share & Export', 'settings': 'Settings',
+  };
+  document.getElementById('pageTitle').textContent = titles[page] || '';
+}
+
+let settingsUnlocked = false;
+
+function handleSettingsNavigation(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (settingsUnlocked) { showPage('settings'); return; }
+  const pw = prompt('Enter Administrative Master Password to access configuration settings:');
+  if (pw === null) {
+    toast('Access Denied: Password entry cancelled.', 'error');
+    showPage('dashboard');
+    return;
+  }
+  if (pw === '543210') {
+    settingsUnlocked = true;
+    toast('Access Granted', 'success');
+    showPage('settings');
+  } else {
+    toast('Access Denied: Invalid Password.', 'error');
+    showPage('dashboard');
+  }
+}
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type === 'success' ? '&#x2705;' : type === 'error' ? '&#x274C;' : '&#x2139;&#xFE0F;'}</span> ${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+}
+
+let currentRole = 'owner';
+function fmtNum(n) { return n != null ? Number(n).toLocaleString() : '--'; }
+function fmtAED(n) { return n != null ? 'AED ' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'; }
+function stripTime(dt) { return dt ? String(dt).split(' ')[0] : ''; }
+
+// Download dropdown
+function toggleDownloadMenu(e) {
+  e.stopPropagation();
+  document.getElementById('downloadMenu').classList.toggle('show');
+}
+function closeDownloadMenu() { document.getElementById('downloadMenu').classList.remove('show'); }
+document.addEventListener('click', () => closeDownloadMenu());
+
+// Google Sheets export
+async function exportGoogleSheets() {
+  toast('Exporting to Google Sheets...', 'info');
+  try {
+    const res = await fetch('/api/export/gsheets', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) toast('Exported to Google Drive!', 'success');
+    else toast(data.error || 'Export failed', 'error');
+  } catch (e) { toast('Google Sheets export error: ' + e.message, 'error'); }
+}
+
+// Async button state helper
+function asyncBtn(btn, action) {
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '&#x23F3; Sending...';
+  return action().then(result => {
+    btn.innerHTML = '&#x2705; Sent!';
+    setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 3000);
+    return result;
+  }).catch(err => {
+    btn.innerHTML = orig;
+    btn.disabled = false;
+    throw err;
+  });
+}
+
+// RBAC enforcement
+function applyRBAC() {
+  const role = currentRole;
+  document.querySelectorAll('[data-role-min]').forEach(el => {
+    const min = el.dataset.roleMin;
+    const levels = { viewer: 0, editor: 1, owner: 2 };
+    el.style.display = (levels[role] >= levels[min]) ? '' : 'none';
+  });
+  document.querySelectorAll('.rbac-hide-viewer').forEach(el => {
+    el.style.display = role === 'viewer' ? 'none' : '';
+  });
+}
+
+// Drill-down filtering
+function getFilteredRecords() {
+  if (!dashboardData || !dashboardData.potentialFraudRecords) return [];
+  if (!activeDrillDown) return dashboardData.potentialFraudRecords;
+  const { field, value } = activeDrillDown;
+  return dashboardData.potentialFraudRecords.filter(r => {
+    if (field === 'customerGroup') return r.customerGroup === value;
+    if (field === 'date') return (r.dateTime || '').substring(0, 11) === value;
+    if (field === 'restaurant') return r.restaurant === value;
+    if (field === 'branch') return r.branch === value;
+    if (field === 'restaurantId') return r.restaurantId === value;
+    if (field === 'branchId') return r.branchId === value;
+    return true;
+  });
+}
+
+function applyDrillDown(field, value) {
+  activeDrillDown = { field, value };
+  const bar = document.getElementById('activeFilterBar');
+  document.getElementById('activeFilterText').textContent = `Filtered: ${field} = "${value}"`;
+  bar.style.display = 'flex';
+  renderDashboardWithFilter();
+}
+
+function clearDrillDown() {
+  activeDrillDown = null;
+  document.getElementById('activeFilterBar').style.display = 'none';
+  renderDashboard();
+}
+
+function renderDashboardWithFilter() {
+  if (!dashboardData) return;
+  const filtered = getFilteredRecords();
+  const count = filtered.length;
+  const totalVal = filtered.reduce((s, r) => s + (r.totalSale || 0), 0);
+  const totalOrders = dashboardData.summary.totalDetailedRows;
+  const pct = totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(2) : '0.00';
+
+  document.getElementById('statDetailedTotal').textContent = fmtNum(totalOrders);
+  document.getElementById('statPotentialFraud').textContent = fmtNum(count);
+  document.getElementById('statFraudValue').textContent = fmtAED(totalVal);
+  document.getElementById('statFraudPct').textContent = pct + '%';
+
+  renderChartsFromRecords(filtered);
+}
+
+async function loadResults() {
+  try {
+    const res = await fetch('/api/results');
+    if (!res.ok) { toast('No analysis results yet. Upload data and run analysis first.', 'info'); return; }
+    dashboardData = await res.json();
+    activeDrillDown = null;
+    document.getElementById('activeFilterBar').style.display = 'none';
+    renderDashboard();
+    document.getElementById('lastUpdated').textContent = dashboardData.generatedAt
+      ? 'Updated: ' + new Date(dashboardData.generatedAt).toLocaleString() : '';
+    checkCelebration();
+  } catch (e) { console.error(e); }
+}
+
+function checkCelebration() {
+  if (!dashboardData) return;
+  if (dashboardData.summary.potentialFraudCount === 0) {
+    showCelebration();
+  }
+}
+
+function showCelebration() {
+  document.getElementById('celebrationOverlay').classList.add('show');
+  launchConfetti();
+}
+
+function closeCelebration() {
+  document.getElementById('celebrationOverlay').classList.remove('show');
+  document.querySelectorAll('.confetti-piece').forEach(c => c.remove());
+}
+
+function launchConfetti() {
+  const colors = ['#FF5900', '#CFFF00', '#411517', '#22C55E', '#EF4444', '#F59E0B', '#8B5CF6', '#06B6D4'];
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDelay = Math.random() * 2 + 's';
+    c.style.animationDuration = (2 + Math.random() * 2) + 's';
+    c.style.width = (6 + Math.random() * 8) + 'px';
+    c.style.height = (6 + Math.random() * 8) + 'px';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 5000);
+  }
+}
+
+function renderDashboard() {
+  if (!dashboardData) return;
+  const s = dashboardData.summary;
+  document.getElementById('statDetailedTotal').textContent = fmtNum(s.totalDetailedRows);
+  document.getElementById('statPotentialFraud').textContent = fmtNum(s.potentialFraudCount);
+  document.getElementById('statFraudValue').textContent = fmtAED(s.potentialFraudValue);
+  document.getElementById('statFraudPct').textContent = s.potentialFraudPct + '%';
+
+  renderFraudTable();
+  renderEmailTable();
+  renderCharts();
+}
+
+function renderFraudTable() {
+  const tbody = document.getElementById('fraudTableBody');
+  tbody.innerHTML = '';
+  let records = [...(dashboardData.potentialFraudRecords || [])];
+
+  // Apply search filters
+  const sRest = (document.getElementById('fraudSearchRestaurant').value || '').toLowerCase();
+  const sRID = (document.getElementById('fraudSearchRID').value || '').toLowerCase();
+  const sDate = (document.getElementById('fraudSearchDate').value || '').toLowerCase();
+  const sEmail = (document.getElementById('fraudSearchEmail').value || '').toLowerCase();
+  if (sRest) records = records.filter(r => (r.restaurant || '').toLowerCase().includes(sRest));
+  if (sRID) records = records.filter(r => (r.restaurantId || '').toLowerCase().includes(sRID));
+  if (sDate) records = records.filter(r => (r.dateTime || '').toLowerCase().includes(sDate));
+  if (sEmail) records = records.filter(r => (r.customerEmail || '').toLowerCase().includes(sEmail));
+
+  // Sort
+  records.sort((a, b) => {
+    let va = a[fraudSortField], vb = b[fraudSortField];
+    if (typeof va === 'number' && typeof vb === 'number') return fraudSortAsc ? va - vb : vb - va;
+    va = String(va || ''); vb = String(vb || '');
+    return fraudSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+
+  records.forEach((r, i) => {
+    tbody.innerHTML += `<tr>
+      <td>${i + 1}</td>
+      <td>${r.restaurantId}</td><td>${r.branchId}</td>
+      <td>${r.restaurant}</td><td>${r.branch}</td><td>${r.orderId}</td>
+      <td>${stripTime(r.dateTime)}</td>
+      <td>${r.paymentMethod || ''}</td><td>${r.status || ''}</td><td>${r.serviceType || ''}</td>
+      <td>${fmtAED(r.subTotal)}</td>
+      <td style="font-weight:600;color:var(--danger);">${fmtAED(r.totalSale)}</td>
+      <td>${fmtAED(r.netPayment)}</td>
+      <td><span class="badge badge-warning">${r.customerGroup || '-'}</span></td>
+      <td>${r.customerAccount || '-'}</td>
+      <td style="font-size:12px;">${r.customerEmail || '-'}</td>
+      <td style="font-size:11px;color:var(--text-muted);max-width:300px;white-space:normal;">${r.reasons}</td>
+    </tr>`;
+  });
+}
+
+function filterFraudTable() { renderFraudTable(); }
+function clearFraudFilters() {
+  document.getElementById('fraudSearchRestaurant').value = '';
+  document.getElementById('fraudSearchRID').value = '';
+  document.getElementById('fraudSearchDate').value = '';
+  document.getElementById('fraudSearchEmail').value = '';
+  renderFraudTable();
+}
+function sortFraudTable(field) {
+  if (fraudSortField === field) fraudSortAsc = !fraudSortAsc;
+  else { fraudSortField = field; fraudSortAsc = false; }
+  renderFraudTable();
+}
+
+function renderEmailTable() {
+  const tbody = document.getElementById('emailTableBody');
+  tbody.innerHTML = '';
+  let emails = [...(dashboardData.checkoutEmailTop20 || [])];
+  const search = (document.getElementById('emailSearch').value || '').toLowerCase();
+  if (search) emails = emails.filter(e => (e.email || '').toLowerCase().includes(search));
+
+  // Sort: default is Order Count desc, then Total Amount desc
+  emails.sort((a, b) => {
+    if (emailSortField === 'email') {
+      const cmp = emailSortAsc ? (a.email || '').localeCompare(b.email || '') : (b.email || '').localeCompare(a.email || '');
+      return cmp;
+    }
+    if (emailSortField === 'firstSeen' || emailSortField === 'lastSeen') {
+      return emailSortAsc ? (a[emailSortField] || '').localeCompare(b[emailSortField] || '') : (b[emailSortField] || '').localeCompare(a[emailSortField] || '');
+    }
+    const va = a[emailSortField] || 0, vb = b[emailSortField] || 0;
+    return emailSortAsc ? va - vb : vb - va;
+  });
+
+  emails.forEach((e, i) => {
+    tbody.innerHTML += `<tr>
+      <td>${i + 1}</td><td style="font-weight:500;">${e.email}</td>
+      <td><span class="badge badge-danger">${e.count}</span></td>
+      <td>${fmtAED(e.totalAmount)}</td>
+      <td><span class="badge ${e.maxBurst > 3 ? 'badge-danger' : 'badge-warning'}">${e.maxBurst}</span></td>
+      <td style="font-size:12px;">${e.firstSeen || '-'}</td>
+      <td style="font-size:12px;">${e.lastSeen || '-'}</td>
+    </tr>`;
+  });
+}
+
+function filterEmailTable() { renderEmailTable(); }
+function sortEmailTable(field) {
+  if (field === 'rank') return;
+  if (emailSortField === field) emailSortAsc = !emailSortAsc;
+  else { emailSortField = field; emailSortAsc = false; }
+  renderEmailTable();
+}
+
+function groupBy(records, keyFn) {
+  const map = {};
+  for (const r of records) {
+    const k = keyFn(r) || '(blank)';
+    if (!map[k]) map[k] = { count: 0, total: 0 };
+    map[k].count++; map[k].total += r.totalSale || 0;
+  }
+  return Object.entries(map).sort((a, b) => b[1].total - a[1].total)
+    .map(([name, v]) => ({ name, count: v.count, total: Math.round(v.total * 100) / 100 }));
+}
+
+function renderChartsFromRecords(records) {
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  const groupData = groupBy(records, r => r.customerGroup);
+  charts.group = createDoughnutChart('chartGroup', groupData, 'customerGroup');
+
+  const dateData = groupBy(records, r => (r.dateTime || '').substring(0, 11));
+  dateData.sort((a, b) => a.name.localeCompare(b.name));
+  charts.date = createBarChart('chartDate', dateData, 'date');
+
+  const restData = groupBy(records, r => r.restaurant).slice(0, 10);
+  charts.restaurant = createHBarChart('chartRestaurant', restData, 'restaurant');
+
+  const branchData = groupBy(records, r => r.branch).slice(0, 10);
+  charts.branch = createComboChart('chartBranch', branchData, 'branch');
+
+  renderEmailChart();
+}
+
+function renderCharts() {
+  const records = dashboardData.potentialFraudRecords || [];
+  renderChartsFromRecords(records);
+}
+
+function createDoughnutChart(canvasId, data, drillField) {
+  const ctx = document.getElementById(canvasId);
+  return new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.slice(0, 8).map(g => g.name),
+      datasets: [{ data: data.slice(0, 8).map(g => g.total),
+        backgroundColor: ['#FF5900','#411517','#CFFF00','#F59E0B','#EF4444','#8B5CF6','#06B6D4','#EC4899'],
+        borderWidth: 0 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { font: { family: 'Inter', size: 11 } } } },
+      onClick: (evt, items) => {
+        if (items.length > 0) {
+          const idx = items[0].index;
+          applyDrillDown(drillField, data[idx].name);
+        }
+      }
+    },
+  });
+}
+
+function createBarChart(canvasId, data, drillField) {
+  const ctx = document.getElementById(canvasId);
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.slice(0, 15).map(d => d.name),
+      datasets: [{ label: 'Fraud Amount (AED)', data: data.slice(0, 15).map(d => d.total),
+        backgroundColor: '#FF590033', borderColor: '#FF5900', borderWidth: 2, borderRadius: 6 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { font: { family: 'Inter', size: 10 }, maxRotation: 45 } },
+                y: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } } },
+      onClick: (evt, items) => {
+        if (items.length > 0) {
+          const idx = items[0].index;
+          applyDrillDown(drillField, data[idx].name);
+        }
+      }
+    },
+  });
+}
+
+function createHBarChart(canvasId, data, drillField) {
+  const ctx = document.getElementById(canvasId);
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(r => r.name.length > 20 ? r.name.substring(0, 20) + '...' : r.name),
+      datasets: [{ label: 'Fraud Amount (AED)', data: data.map(r => r.total),
+        backgroundColor: '#FF590033', borderColor: '#FF5900', borderWidth: 2, borderRadius: 6 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } },
+                y: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } } },
+      onClick: (evt, items) => {
+        if (items.length > 0) {
+          const idx = items[0].index;
+          applyDrillDown(drillField, data[idx].name);
+        }
+      }
+    },
+  });
+}
+
+function createComboChart(canvasId, data, drillField) {
+  const ctx = document.getElementById(canvasId);
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(b => b.name.length > 30 ? b.name.substring(0, 30) + '...' : b.name),
+      datasets: [
+        { label: 'Count', data: data.map(b => b.count), backgroundColor: '#FF5900', borderRadius: 4, yAxisID: 'y' },
+        { label: 'Total (AED)', data: data.map(b => b.total), backgroundColor: '#CFFF0066', borderColor: '#9AB700', borderWidth: 2, borderRadius: 4, yAxisID: 'y1', type: 'line' },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font: { family: 'Inter', size: 11 } } } },
+      scales: {
+        x: { ticks: { font: { family: 'Inter', size: 10 }, maxRotation: 45 } },
+        y: { position: 'left', title: { display: true, text: 'Count' } },
+        y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'AED' } },
+      },
+      onClick: (evt, items) => {
+        if (items.length > 0) {
+          const idx = items[0].index;
+          applyDrillDown(drillField, data[idx].name);
+        }
+      }
+    },
+  });
+}
+
+function renderEmailChart() {
+  const emailData = dashboardData.checkoutEmailTop20 || [];
+  if (charts.emails) charts.emails.destroy();
+  charts.emails = new Chart(document.getElementById('chartEmails'), {
+    type: 'bar',
+    data: {
+      labels: emailData.map(e => e.email.length > 25 ? e.email.substring(0, 25) + '...' : e.email),
+      datasets: [{ label: 'Order Count', data: emailData.map(e => e.count),
+        backgroundColor: emailData.map(e => e.maxBurst > 3 ? '#EF444488' : '#FF590088'),
+        borderColor: emailData.map(e => e.maxBurst > 3 ? '#EF4444' : '#FF5900'),
+        borderWidth: 2, borderRadius: 4 }],
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { font: { family: 'Inter', size: 9 }, maxRotation: 60 } },
+                y: { title: { display: true, text: 'Orders' } } } },
+  });
+}
+
+// Upload
+function selectFolder(el) {
+  document.querySelectorAll('.folder-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentFolder = el.dataset.folder;
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.target.closest('.upload-zone').classList.remove('dragover');
+  uploadFiles(e.dataTransfer.files);
+}
+
+async function uploadFilesToFolder(folder, files) {
+  if (!files.length) return;
+  const settings = loadSettings();
+  const fd = new FormData();
+  for (const f of files) fd.append('files', f);
+  fd.append('uploaderName', settings.uploaderName || 'Unknown');
+
+  try {
+    const res = await fetch(`/api/upload/${folder}`, { method: 'POST', body: fd });
+    const data = await res.json();
+    toast(data.message, 'success');
+    loadFileList();
+  } catch (e) { toast('Upload failed: ' + e.message, 'error'); }
+}
+
+async function uploadFiles(files) {
+  if (!files.length) return;
+  const prog = document.getElementById('uploadProgress');
+  prog.style.display = 'block';
+  document.getElementById('uploadFill').style.width = '30%';
+  document.getElementById('uploadStatus').textContent = `Uploading ${files.length} file(s) to ${currentFolder}...`;
+
+  const settings = loadSettings();
+  const fd = new FormData();
+  for (const f of files) fd.append('files', f);
+  fd.append('uploaderName', settings.uploaderName || 'Unknown');
+
+  try {
+    const res = await fetch(`/api/upload/${currentFolder}`, { method: 'POST', body: fd });
+    const data = await res.json();
+    document.getElementById('uploadFill').style.width = '100%';
+    document.getElementById('uploadStatus').textContent = data.message;
+    toast(data.message, 'success');
+    loadFileList();
+    setTimeout(() => { prog.style.display = 'none'; }, 3000);
+  } catch (e) {
+    toast('Upload failed: ' + e.message, 'error');
+    prog.style.display = 'none';
+  }
+}
+
+function fmtDateShort(isoStr) {
+  if (!isoStr) return '-';
+  const d = new Date(isoStr);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${String(d.getDate()).padStart(2,'0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
+}
+
+async function loadFileList() {
+  try {
+    const res = await fetch('/api/files');
+    const data = await res.json();
+    const container = document.getElementById('fileListContainer');
+    let html = `<p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Source: ${data._source === 'gdrive' ? 'Google Shared Drive' : 'Local uploads'}</p>`;
+    for (const [folder, files] of Object.entries(data)) {
+      if (folder === '_source') continue;
+      html += `<h4 style="margin:12px 0 6px;font-size:13px;color:var(--primary);">&#x1F4C1; ${folder}</h4>`;
+      if (files.length === 0) { html += '<p style="font-size:12px;color:var(--text-muted);margin-left:20px;">No files</p>'; continue; }
+      html += '<ul class="file-list">';
+      files.forEach(f => {
+        const size = f.size > 1048576 ? (f.size / 1048576).toFixed(1) + ' MB' : (f.size / 1024).toFixed(0) + ' KB';
+        html += `<li class="file-item">
+          <span class="name">&#x1F4C4; ${f.name}</span>
+          <span class="meta">${size} | Uploaded: ${fmtDateShort(f.dateUploaded)} | Modified: ${fmtDateShort(f.dateModified)} | By: ${f.uploaderName || '-'}</span>
+        </li>`;
+      });
+      html += '</ul>';
+    }
+    container.innerHTML = html;
+  } catch (e) { console.error(e); }
+}
+
+// Run analysis
+async function runAnalysis() {
+  const btn = document.getElementById('btnRun');
+  btn.disabled = true;
+  btn.innerHTML = '&#x23F3; Running...';
+  const prog = document.getElementById('runProgress');
+  prog.style.display = 'block';
+  document.getElementById('runFill').style.width = '10%';
+  const logEl = document.getElementById('runLog');
+  logEl.innerHTML = '<div class="log-line">Starting fraud analysis...</div>';
+
+  const pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch('/api/status');
+      const status = await res.json();
+      if (status.log && status.log.length) {
+        logEl.innerHTML = status.log.map(l => `<div class="log-line">${l}</div>`).join('');
+        logEl.scrollTop = logEl.scrollHeight;
+        const pct = Math.min(10 + (status.log.length * 8), 90);
+        document.getElementById('runFill').style.width = pct + '%';
+      }
+    } catch (e) {}
+  }, 2000);
+
+  try {
+    const res = await fetch('/api/run', { method: 'POST' });
+    clearInterval(pollInterval);
+    const data = await res.json();
+    document.getElementById('runFill').style.width = '100%';
+    if (data.success) {
+      dashboardData = data.data;
+      logEl.innerHTML += '<div class="log-line" style="color:#CFFF00;">&#x2705; Analysis complete!</div>';
+      if (data.warnings && data.warnings.length) {
+        logEl.innerHTML += '<div class="log-line" style="color:#F59E0B;">&#x26A0;&#xFE0F; Warnings:</div>';
+        data.warnings.forEach(w => {
+          logEl.innerHTML += `<div class="log-line" style="color:#F59E0B;">  [${w.step}] ${w.error}</div>`;
+          logEl.innerHTML += `<div class="log-line" style="color:#aaa;">    Fix: ${w.fix}</div>`;
+        });
+        toast(`Analysis complete with ${data.warnings.length} warning(s). Check the log.`, 'info');
+      } else {
+        toast('Analysis complete! View the dashboard for results.', 'success');
+      }
+      renderDashboard();
+      checkCelebration();
+    } else {
+      logEl.innerHTML += `<div class="log-line" style="color:#EF4444;">&#x274C; Error: ${data.error}</div>`;
+      toast('Analysis failed: ' + data.error, 'error');
+    }
+  } catch (e) {
+    clearInterval(pollInterval);
+    toast('Analysis failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#x1F680; Run Analysis';
+  }
+}
+
+function downloadExcel() { window.open('/api/download/excel', '_blank'); }
+
+function downloadPDF() {
+  const activePage = document.querySelector('.page.active');
+  if (!activePage) return;
+  const activeNav = document.querySelector('.nav-item.active');
+  const tabName = activeNav ? activeNav.textContent.trim() : 'Report';
+  const safeName = tabName.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
+  toast(`Generating PDF for "${tabName}"...`, 'info');
+  const opt = {
+    margin: 10,
+    filename: `Fraud_Analysis_${safeName}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+    jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' },
+  };
+  html2pdf().set(opt).from(activePage).save().then(() => {
+    toast('PDF downloaded!', 'success');
+  });
+}
+
+// Slack
+function openSlackModal() {
+  const settings = loadSettings();
+  document.getElementById('slackModalChannel').value = settings.slackChannel || 'C085XTZTC05';
+  document.getElementById('slackModal').classList.add('show');
+}
+function closeSlackModal() { document.getElementById('slackModal').classList.remove('show'); }
+
+async function shareToSlack() {
+  const settings = loadSettings();
+  const channelId = document.getElementById('slackModalChannel').value;
+  const message = document.getElementById('slackModalMessage').value;
+  if (!settings.slackToken) { toast('Set your Slack Bot Token in Settings first.', 'error'); return; }
+
+  const btn = document.querySelector('#slackModal .btn-slack');
+  await asyncBtn(btn, async () => {
+    const res = await fetch('/api/share/slack', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelId, message, token: settings.slackToken }),
+    });
+    const data = await res.json();
+    if (data.success) { toast('Shared to Slack!', 'success'); setTimeout(() => closeSlackModal(), 1500); }
+    else toast(data.error, 'error');
+  });
+}
+
+// Email
+async function sendEmail() {
+  const settings = loadSettings();
+  const payload = {
+    from: document.getElementById('emailFrom').value,
+    to: document.getElementById('emailTo').value,
+    cc: document.getElementById('emailCc').value,
+    subject: document.getElementById('emailSubject').value,
+    body: document.getElementById('emailBody').value,
+    smtpHost: settings.smtpHost, smtpPort: settings.smtpPort,
+    smtpUser: settings.smtpUser, smtpPass: settings.smtpPass,
+  };
+  if (!payload.to) { toast('TO field is required', 'error'); return; }
+  if (!settings.smtpHost) { toast('Configure SMTP settings first.', 'error'); return; }
+
+  const btn = document.getElementById('btnSendEmail');
+  await asyncBtn(btn, async () => {
+    const res = await fetch('/api/share/email', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.success) toast('Email sent!', 'success');
+    else toast(data.error, 'error');
+  });
+}
+
+// Settings
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem('fraudHunterSettings') || '{}'); }
+  catch { return {}; }
+}
+function saveSettings() {
+  const settings = {
+    uploaderName: document.getElementById('uploaderName').value,
+    userRole: document.getElementById('userRole').value,
+    slackToken: document.getElementById('slackToken').value,
+    slackChannel: document.getElementById('slackChannel').value,
+    smtpHost: document.getElementById('smtpHost').value,
+    smtpPort: document.getElementById('smtpPort').value,
+    smtpUser: document.getElementById('smtpUser').value,
+    smtpPass: document.getElementById('smtpPass').value,
+  };
+  localStorage.setItem('fraudHunterSettings', JSON.stringify(settings));
+  setRole(settings.userRole || 'owner');
+  toast('Settings saved!', 'success');
+}
+function restoreSettings() {
+  const s = loadSettings();
+  if (s.uploaderName) document.getElementById('uploaderName').value = s.uploaderName;
+  if (s.userRole) { document.getElementById('userRole').value = s.userRole; setRole(s.userRole); }
+  if (s.slackToken) document.getElementById('slackToken').value = s.slackToken;
+  if (s.slackChannel) document.getElementById('slackChannel').value = s.slackChannel;
+  if (s.smtpHost) document.getElementById('smtpHost').value = s.smtpHost;
+  if (s.smtpPort) document.getElementById('smtpPort').value = s.smtpPort;
+  if (s.smtpUser) document.getElementById('smtpUser').value = s.smtpUser;
+  if (s.smtpPass) document.getElementById('smtpPass').value = s.smtpPass;
+}
+
+function setRole(role) {
+  currentRole = role || 'owner';
+  applyRBAC();
+}
+
+async function generatePublicLink() {
+  try {
+    const res = await fetch('/api/public/generate', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('publicLink').value = data.url;
+      toast('Public link generated!', 'success');
+    } else toast(data.error, 'error');
+  } catch (e) { toast('Error generating link: ' + e.message, 'error'); }
+}
+
+function copyPublicLink() {
+  const link = document.getElementById('publicLink').value;
+  if (!link) { toast('Generate a link first', 'error'); return; }
+  navigator.clipboard.writeText(link);
+  toast('Link copied to clipboard!', 'success');
+}
+
+// Init
+window.addEventListener('DOMContentLoaded', () => {
+  restoreSettings();
+  loadResults();
+  loadFileList();
+});
+</script>
+</body>
+</html>

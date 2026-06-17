@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: talabat-fraud-hunter
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_ROOT
+        value: /opt/render/project/src/data
+    disk:
+      name: fraud-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 10

@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "google-workspace": {
+      "type": "sse",
+      "url": "https://talabatai.dhhmena.com/mcp/gateway/google-workspace/mcp"
+    },
+    "slack": {
+      "type": "sse",
+      "url": "https://talabatai.dhhmena.com/mcp/gateway/slack/mcp"
+    },
+    "looker": {
+      "type": "sse",
+      "url": "https://talabatai.dhhmena.com/mcp/gateway/looker/mcp"
+    },
+    "tableau": {
+      "type": "sse",
+      "url": "https://talabatai.dhhmena.com/mcp/gateway/tableau/mcp"
+    }
+  }
+}
