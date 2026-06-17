@@ -103,10 +103,12 @@ All connections use **SSE (Server-Sent Events)** transport.
 
 ## Dynamic Variables & External Storage
 
-| Node    | Type   | URL                                                                                        |
-|---------|--------|--------------------------------------------------------------------------------------------|
-| Input   | Source | `https://drive.google.com/drive/folders/13WyEDftGEHZjhbCRaXF298gRWbpuUJX8`               |
-| Output  | Report | `https://drive.google.com/drive/folders/1ZWyk9K86N81G4Xe1iyB8Y6yvrbVz-6IX`               |
+| Node       | Type       | URL                                                                                        |
+|------------|------------|--------------------------------------------------------------------------------------------|
+| Parent     | Root       | `https://drive.google.com/drive/folders/1-oMUrBczTD1tv5mSyRFe00_pTlDjg1yH`               |
+| Input      | Source     | `{Parent}/Input` (AX365, Branch Inquiry, Checkout, Detailed Reports)                       |
+| Output     | Report     | `{Parent}/Output` (Excel reports, dashboard_data.json)                                     |
+| Dashboard  | App        | `{Parent}/FraudAnalysis` (server.js, fraud_engine.js, public/)                             |
 
 **Local Virtual Path (Google Drive for Desktop):** `G:\Shared drives\AR Team (Talabat UAE Finance) - Shared Drive\Claude\Fraud`
 

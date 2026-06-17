@@ -225,8 +225,9 @@ app.post('/api/share/email', async (req, res) => {
 });
 
 // Google Drive URLs for reference
-const GDRIVE_OUTPUT_URL = 'https://drive.google.com/drive/folders/1ZWyk9K86N81G4Xe1iyB8Y6yvrbVz-6IX';
-const GDRIVE_INPUT_URL = 'https://drive.google.com/drive/folders/13WyEDftGEHZjhbCRaXF298gRWbpuUJX8';
+const GDRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/1-oMUrBczTD1tv5mSyRFe00_pTlDjg1yH';
+const GDRIVE_OUTPUT_URL = GDRIVE_FOLDER_URL;
+const GDRIVE_INPUT_URL = GDRIVE_FOLDER_URL;
 
 app.post('/api/export/gsheets', (req, res) => {
   let file = latestOutputPath;
