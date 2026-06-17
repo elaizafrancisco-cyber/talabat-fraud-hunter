@@ -6,7 +6,7 @@
 <title>Talabat Fraud Hunter</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -35,6 +35,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 }
 .sidebar-header { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .logo-area { display: flex; align-items: center; gap: 12px; }
+.talabat-logo { width: 42px; height: 42px; }
 .logo-text { font-weight: 800; font-size: 18px; letter-spacing: -0.5px; }
 .logo-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; font-weight: 400; }
 
@@ -61,6 +62,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .topbar-time { font-size: 12px; color: var(--text-muted); }
 
 .dropdown-wrap { position: relative; display: inline-block; }
+.dropdown-btn { position: relative; }
 .dropdown-menu {
   display: none; position: absolute; right: 0; top: 100%; margin-top: 6px;
   background: white; border: 1px solid var(--border); border-radius: 10px;
@@ -214,6 +216,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .file-item .meta { color: var(--text-muted); font-size: 11px; text-align: right; white-space: nowrap; }
 
 .settings-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.settings-row input { margin-bottom: 0; }
 
 .search-bar {
   display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
@@ -235,6 +238,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
 }
 
+/* Celebration popup */
 .celebration-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500;
   display: none; align-items: center; justify-content: center; backdrop-filter: blur(6px);
@@ -259,21 +263,6 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
 
-.gdrive-links { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-.gdrive-link {
-  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
-  background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: 8px;
-  color: #2E7D32; font-size: 12px; font-weight: 600; text-decoration: none;
-  transition: all 0.2s;
-}
-.gdrive-link:hover { background: #C8E6C9; }
-
-.standalone-badge {
-  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
-  background: #E3F2FD; border-radius: 6px; font-size: 11px; font-weight: 600;
-  color: #1565C0;
-}
-
 @media (max-width: 900px) {
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); }
@@ -293,9 +282,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="logo-area">
-      <svg width="42" height="42" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg" style="border-radius:8px;flex-shrink:0;">
+      <svg class="talabat-logo" viewBox="0 0 42 42" style="width: 42px; height: 42px; border-radius: 8px;">
         <rect width="42" height="42" rx="8" fill="#FF5900"/>
-        <text x="21" y="28" text-anchor="middle" font-family="Inter,sans-serif" font-weight="900" font-size="26" fill="white">T</text>
+        <text x="21" y="30" text-anchor="middle" font-size="28" font-weight="900" fill="white" font-family="Inter, Arial, sans-serif">T</text>
       </svg>
       <div>
         <div class="logo-text">Fraud Hunter</div>
@@ -328,9 +317,6 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <span class="icon">&#x2699;&#xFE0F;</span> Settings
     </div>
   </div>
-  <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08);">
-    <span class="standalone-badge">&#x1F310; Standalone Mode</span>
-  </div>
 </div>
 
 <div class="main">
@@ -341,9 +327,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     </div>
     <div class="topbar-actions">
       <span class="topbar-time" id="lastUpdated"></span>
-      <button class="btn btn-outline btn-sm" onclick="refreshDashboard()">&#x1F504; Refresh</button>
+      <button class="btn btn-outline btn-sm" onclick="loadResults()">&#x1F504; Refresh</button>
       <div class="dropdown-wrap">
-        <button class="btn btn-primary btn-sm" onclick="toggleDownloadMenu(event)">&#x2B07;&#xFE0F; Download &#x25BE;</button>
+        <button class="btn btn-primary btn-sm dropdown-btn" onclick="toggleDownloadMenu(event)">&#x2B07;&#xFE0F; Download &#x25BE;</button>
         <div class="dropdown-menu" id="downloadMenu">
           <button class="dropdown-item" onclick="downloadExcel();closeDownloadMenu();">
             <span class="dd-icon">&#x1F4CA;</span> Excel (.xlsx)
@@ -351,8 +337,8 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
           <button class="dropdown-item" onclick="downloadPDF();closeDownloadMenu();">
             <span class="dd-icon">&#x1F4C4;</span> PDF (.pdf)
           </button>
-          <button class="dropdown-item" onclick="openGoogleDrive();closeDownloadMenu();">
-            <span class="dd-icon">&#x1F4D7;</span> Google Drive
+          <button class="dropdown-item" onclick="exportGoogleSheets();closeDownloadMenu();">
+            <span class="dd-icon">&#x1F4D7;</span> Google Sheets
           </button>
         </div>
       </div>
@@ -488,51 +474,49 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <!-- UPLOAD PAGE -->
     <div class="page" id="page-upload">
       <div class="card">
-        <div class="card-title">&#x1F4C1; Load Data Files</div>
-        <p style="color:var(--text-muted);font-size:13px;margin-bottom:8px;">
-          Select files from your computer for each data category. Files are loaded into browser memory for analysis.
-        </p>
-        <div class="gdrive-links">
-          <a href="https://drive.google.com/drive/folders/13WyEDftGEHZjhbCRaXF298gRWbpuUJX8" target="_blank" class="gdrive-link">&#x1F4C2; Input Folder (Google Drive)</a>
-          <a href="https://drive.google.com/drive/folders/1ZWyk9K86N81G4Xe1iyB8Y6yvrbVz-6IX" target="_blank" class="gdrive-link">&#x1F4C2; Output Folder (Google Drive)</a>
-        </div>
-        <p style="color:var(--warning);font-size:12px;margin-bottom:16px;font-weight:500;">
-          &#x26A0;&#xFE0F; Files are stored in browser memory only. They are not uploaded to any server. Refresh the page = files cleared.
+        <div class="card-title">&#x1F4C1; Upload Data Files</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+          Click any folder icon below to upload files directly, or use the drag & drop zone. After uploading, go to "Run Analysis" to process the data.
         </p>
         <div class="folder-tabs">
           <div class="folder-tab active" data-folder="detailed-reports" onclick="selectFolder(this)">
             &#x1F4C4; Detailed Reports
-            <input type="file" id="fileInputDetailedReports" multiple accept=".xlsx" onchange="loadFilesToFolder('detailed-reports', this.files)">
-            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputDetailedReports').click();" style="padding:2px 8px;font-size:11px;">+ Select</span>
+            <input type="file" id="fileInputDetailedReports" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('detailed-reports', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputDetailedReports').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
           </div>
           <div class="folder-tab" data-folder="checkout" onclick="selectFolder(this)">
             &#x1F4B3; Checkout
-            <input type="file" id="fileInputCheckout" multiple accept=".csv" onchange="loadFilesToFolder('checkout', this.files)">
-            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputCheckout').click();" style="padding:2px 8px;font-size:11px;">+ Select</span>
+            <input type="file" id="fileInputCheckout" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('checkout', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputCheckout').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
           </div>
           <div class="folder-tab" data-folder="ax365" onclick="selectFolder(this)">
             &#x1F4CA; AX365
-            <input type="file" id="fileInputAx365" multiple accept=".xlsx" onchange="loadFilesToFolder('ax365', this.files)">
-            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputAx365').click();" style="padding:2px 8px;font-size:11px;">+ Select</span>
+            <input type="file" id="fileInputAx365" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('ax365', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputAx365').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
           </div>
           <div class="folder-tab" data-folder="branch-inquiry" onclick="selectFolder(this)">
             &#x1F3E2; Branch Inquiry
-            <input type="file" id="fileInputBranchInquiry" multiple accept=".xlsx" onchange="loadFilesToFolder('branch-inquiry', this.files)">
-            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputBranchInquiry').click();" style="padding:2px 8px;font-size:11px;">+ Select</span>
+            <input type="file" id="fileInputBranchInquiry" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('branch-inquiry', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputBranchInquiry').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
           </div>
         </div>
-        <div class="upload-zone" id="uploadZone"
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
              ondragover="event.preventDefault();this.classList.add('dragover')"
              ondragleave="this.classList.remove('dragover')"
              ondrop="handleDrop(event)">
           <div class="icon">&#x1F4C2;</div>
-          <p><strong>Drag & drop files here</strong></p>
-          <p style="font-size:12px;margin-top:8px;">Files go to the currently selected folder tab. Supports .xlsx and .csv</p>
+          <p><strong>Click to browse</strong> or drag & drop files here</p>
+          <p style="font-size:12px;margin-top:8px;">Supports .xlsx and .csv files (up to 500MB)</p>
+        </div>
+        <input type="file" id="fileInput" multiple accept=".xlsx,.csv" style="display:none" onchange="uploadFiles(this.files)">
+        <div id="uploadProgress" style="display:none;">
+          <div class="progress-bar"><div class="fill" id="uploadFill" style="width:0%"></div></div>
+          <p id="uploadStatus" style="font-size:13px;color:var(--text-muted);"></p>
         </div>
       </div>
       <div class="card">
-        <div class="card-title">&#x1F4C2; Loaded Files</div>
-        <div id="fileListContainer"><p style="color:var(--text-muted);font-size:13px;">No files loaded yet. Select files above to begin.</p></div>
+        <div class="card-title">&#x1F4C2; Current Files</div>
+        <div id="fileListContainer"><p style="color:var(--text-muted);font-size:13px;">Loading...</p></div>
       </div>
     </div>
 
@@ -542,7 +526,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <div style="font-size:64px;margin-bottom:16px;">&#x26A1;</div>
         <h2 style="margin-bottom:8px;">Run Fraud Analysis</h2>
         <p style="color:var(--text-muted);max-width:500px;margin:0 auto 24px;">
-          Process all loaded data files in your browser, apply fraud detection rules, and generate the analysis report. No data leaves your computer.
+          Process all uploaded data files, apply fraud detection rules, and generate the analysis report.
         </p>
         <button class="btn btn-primary" id="btnRun" onclick="runAnalysis()" style="font-size:16px;padding:14px 36px;">
           &#x1F680; Run Analysis
@@ -560,7 +544,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <div class="card" style="text-align:center;">
           <div style="font-size:48px;margin-bottom:12px;">&#x1F4E5;</div>
           <h3>Download Excel</h3>
-          <p style="color:var(--text-muted);font-size:13px;margin:8px 0 20px;">Fraud analysis workbook with all data sheets.</p>
+          <p style="color:var(--text-muted);font-size:13px;margin:8px 0 20px;">Full fraud analysis Excel with all sheets.</p>
           <button class="btn btn-primary" onclick="downloadExcel()">&#x2B07;&#xFE0F; Excel</button>
         </div>
         <div class="card" style="text-align:center;">
@@ -571,23 +555,23 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         </div>
         <div class="card" style="text-align:center;">
           <div style="font-size:48px;margin-bottom:12px;">&#x1F4AC;</div>
-          <h3>Copy for Slack</h3>
-          <p style="color:var(--text-muted);font-size:13px;margin:8px 0 20px;">Copy fraud summary to clipboard for Slack.</p>
-          <button class="btn btn-slack" onclick="copyForSlack()">&#x1F4CB; Copy Report</button>
+          <h3>Share to Slack</h3>
+          <p style="color:var(--text-muted);font-size:13px;margin:8px 0 20px;">Send report to a Slack channel.</p>
+          <button class="btn btn-slack" onclick="openSlackModal()">&#x1F4AC; Slack</button>
         </div>
       </div>
       <div class="card" style="margin-top:20px;">
         <div class="card-title">&#x1F4E7; Share Top 20 Emails via Email</div>
         <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
-          Opens your default email client with the top 20 suspicious emails pre-filled.
+          Send the top 20 suspicious emails from Dashboard 2 automatically via email.
         </p>
         <div class="settings-row">
+          <div><label>FROM</label><input id="emailFrom" placeholder="your.email@talabat.com"></div>
           <div><label>TO</label><input id="emailTo" placeholder="recipient@talabat.com"></div>
-          <div><label>CC</label><input id="emailCc" placeholder="cc@talabat.com (optional)"></div>
         </div>
         <div class="settings-row" style="margin-top:10px;">
-          <div><label>Subject</label><input id="emailSubject" value="Fraud Alert - Suspicious Customer Emails"></div>
-          <div></div>
+          <div><label>CC</label><input id="emailCc" placeholder="cc@talabat.com (optional)"></div>
+          <div><label>Subject</label><input id="emailSubject" placeholder="Fraud Alert - Suspicious Customer Emails"></div>
         </div>
         <label>Email Body</label>
         <textarea id="emailBody">Dear Team,
@@ -597,15 +581,7 @@ Please verify the emails below that have suspicious transactions.
 Regards,
 UAE Talabat Finance</textarea>
         <div style="margin-top:16px;">
-          <button class="btn btn-primary" onclick="sendEmail()">&#x1F4E8; Open Email Client</button>
-        </div>
-      </div>
-      <div class="card" style="margin-top:20px;">
-        <div class="card-title">&#x1F517; Google Drive Links</div>
-        <div class="gdrive-links">
-          <a href="https://drive.google.com/drive/folders/1-oMUrBczTD1tv5mSyRFe00_pTlDjg1yH" target="_blank" class="gdrive-link">&#x1F4C2; Parent Folder</a>
-          <a href="https://drive.google.com/drive/folders/13WyEDftGEHZjhbCRaXF298gRWbpuUJX8" target="_blank" class="gdrive-link">&#x1F4C2; Input Folder</a>
-          <a href="https://drive.google.com/drive/folders/1ZWyk9K86N81G4Xe1iyB8Y6yvrbVz-6IX" target="_blank" class="gdrive-link">&#x1F4C2; Output Folder</a>
+          <button class="btn btn-primary" id="btnSendEmail" onclick="sendEmail()">&#x1F4E8; Send Email</button>
         </div>
       </div>
     </div>
@@ -616,12 +592,12 @@ UAE Talabat Finance</textarea>
         <div class="card-title">&#x1F464; User Settings</div>
         <div class="settings-row">
           <div>
-            <label>Your Name</label>
+            <label>Your Name (for upload tracking)</label>
             <input id="uploaderName" placeholder="e.g. John Doe">
           </div>
           <div>
             <label>Your Role</label>
-            <select id="userRole" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;">
+            <select id="userRole" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;" onchange="setRole(this.value)">
               <option value="owner">Owner (Full Access)</option>
               <option value="editor">Editor (Read/Write)</option>
               <option value="viewer">Viewer (Read-Only)</option>
@@ -633,27 +609,55 @@ UAE Talabat Finance</textarea>
         </div>
       </div>
       <div class="card">
-        <div class="card-title">&#x1F517; Dashboard URL</div>
+        <div class="card-title">&#x1F517; Public Access Link</div>
         <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">
-          Share this page URL with stakeholders to access the dashboard.
+          Generate a guest-accessible link for stakeholders to view the dashboard without login.
         </p>
         <div style="display:flex;gap:10px;align-items:center;">
-          <input id="publicLink" readonly style="flex:1;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;background:#f9f9f9;">
-          <button class="btn btn-sm btn-primary" onclick="copyPublicLink()">Copy URL</button>
+          <input id="publicLink" readonly style="flex:1;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;background:#f9f9f9;" placeholder="Click Generate to create a link">
+          <button class="btn btn-sm btn-primary" onclick="generatePublicLink()">Generate</button>
+          <button class="btn btn-sm btn-outline" onclick="copyPublicLink()">Copy</button>
         </div>
       </div>
       <div class="card">
-        <div class="card-title">&#x1F4BE; Data Management</div>
-        <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">
-          Analysis results are cached in your browser's local storage.
-        </p>
-        <div style="display:flex;gap:10px;">
-          <button class="btn btn-sm btn-outline" onclick="exportJSON()">&#x1F4E5; Export Results (JSON)</button>
-          <button class="btn btn-sm btn-outline" onclick="document.getElementById('importJsonInput').click()">&#x1F4E4; Import Results (JSON)</button>
-          <input type="file" id="importJsonInput" accept=".json" style="display:none" onchange="importJSON(this.files)">
-          <button class="btn btn-sm btn-danger" onclick="clearCachedData()">&#x1F5D1; Clear Cache</button>
+        <div class="card-title">&#x1F4AC; Slack Configuration</div>
+        <label>Slack Bot Token</label>
+        <input id="slackToken" type="password" placeholder="xoxb-your-slack-bot-token">
+        <label>Default Channel ID</label>
+        <input id="slackChannel" value="C085XTZTC05" placeholder="C085XTZTC05">
+        <div style="margin-top:12px;">
+          <button class="btn btn-sm btn-outline" onclick="saveSettings()">Save Settings</button>
         </div>
       </div>
+      <div class="card">
+        <div class="card-title">&#x1F4E7; SMTP Email Configuration</div>
+        <div class="settings-row">
+          <div><label>SMTP Host</label><input id="smtpHost" placeholder="smtp.office365.com"></div>
+          <div><label>SMTP Port</label><input id="smtpPort" placeholder="587"></div>
+        </div>
+        <div class="settings-row" style="margin-top:10px;">
+          <div><label>SMTP User</label><input id="smtpUser" placeholder="your.email@talabat.com"></div>
+          <div><label>SMTP Password</label><input id="smtpPass" type="password" placeholder="app password"></div>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-sm btn-outline" onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slack Modal -->
+<div class="modal-overlay" id="slackModal">
+  <div class="modal">
+    <h2>&#x1F4AC; Share to Slack</h2>
+    <label>Channel ID</label>
+    <input id="slackModalChannel" value="C085XTZTC05">
+    <label>Message</label>
+    <textarea id="slackModalMessage" placeholder="&#x1F6A8; Fraud Analysis Report - please review the attached Excel file for potential fraud orders."></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeSlackModal()">Cancel</button>
+      <button class="btn btn-slack" onclick="shareToSlack()">&#x1F680; Send to Slack</button>
     </div>
   </div>
 </div>
@@ -672,9 +676,9 @@ UAE Talabat Finance</textarea>
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-// =========================================
-// GLOBAL STATE
-// =========================================
+/* ============================================================
+   SHARED STATE
+   ============================================================ */
 let dashboardData = null;
 let charts = {};
 let currentFolder = 'detailed-reports';
@@ -683,123 +687,54 @@ let fraudSortField = 'totalSale';
 let fraudSortAsc = false;
 let emailSortField = 'count';
 let emailSortAsc = false;
-let settingsUnlocked = false;
-let analysisRunning = false;
 
-const uploadedFiles = {
-  'detailed-reports': [],
-  'checkout': [],
-  'ax365': [],
-  'branch-inquiry': []
+const folderKeyMap = {
+  'detailed-reports': 'Detailed Reports',
+  'checkout': 'Checkout',
+  'ax365': 'AX365',
+  'branch-inquiry': 'Branch Inquiry'
 };
 
-const GDRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/1-oMUrBczTD1tv5mSyRFe00_pTlDjg1yH';
+const uploadedFiles = {
+  'Detailed Reports': [],
+  'Checkout': [],
+  'AX365': [],
+  'Branch Inquiry': []
+};
 
-// =========================================
-// UTILITY FUNCTIONS
-// =========================================
-function toast(msg, type) {
-  type = type || 'info';
-  const el = document.createElement('div');
-  el.className = 'toast ' + type;
-  el.innerHTML = '<span>' + (type === 'success' ? '&#x2705;' : type === 'error' ? '&#x274C;' : '&#x2139;&#xFE0F;') + '</span> ' + msg;
-  document.getElementById('toastContainer').appendChild(el);
-  setTimeout(function() { el.remove(); }, 5000);
-}
+let latestAllRecords = null;
 
-function fmtNum(n) { return n != null ? Number(n).toLocaleString() : '--'; }
-function fmtAED(n) { return n != null ? 'AED ' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'; }
-function stripTime(dt) { return dt ? String(dt).split(' ')[0] : ''; }
-function fmtSize(bytes) { return bytes > 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : (bytes / 1024).toFixed(0) + ' KB'; }
-
-function showPage(page) {
-  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
-  document.getElementById('page-' + page).classList.add('active');
-  var nav = document.querySelector('.nav-item[data-page="' + page + '"]');
-  if (nav) nav.classList.add('active');
-  var titles = {
-    'dashboard': 'Fraud Analysis Dashboard', 'fraud-table': 'Potential Fraud Orders',
-    'emails': 'Suspicious Customer Emails', 'upload': 'Upload Data Files',
-    'run': 'Run Analysis', 'share': 'Share & Export', 'settings': 'Settings',
-  };
-  document.getElementById('pageTitle').textContent = titles[page] || '';
-}
-
-function handleSettingsNavigation(event) {
-  event.preventDefault();
-  event.stopPropagation();
-  if (settingsUnlocked) { showPage('settings'); return; }
-  var pw = prompt('Enter Administrative Master Password to access configuration settings:');
-  if (pw === null) { toast('Access Denied: Password entry cancelled.', 'error'); showPage('dashboard'); return; }
-  if (pw === '543210') { settingsUnlocked = true; toast('Access Granted', 'success'); showPage('settings'); }
-  else { toast('Access Denied: Invalid Password.', 'error'); showPage('dashboard'); }
-}
-
-// Download dropdown
-function toggleDownloadMenu(e) { e.stopPropagation(); document.getElementById('downloadMenu').classList.toggle('show'); }
-function closeDownloadMenu() { document.getElementById('downloadMenu').classList.remove('show'); }
-document.addEventListener('click', function() { closeDownloadMenu(); });
-
-function openGoogleDrive() { window.open(GDRIVE_FOLDER_URL, '_blank'); }
-
-// =========================================
-// FILE READING HELPERS
-// =========================================
-function readFileAsArrayBuffer(file) {
-  return new Promise(function(resolve, reject) {
-    var reader = new FileReader();
-    reader.onload = function() { resolve(reader.result); };
-    reader.onerror = function() { reject(new Error('Failed to read: ' + file.name)); };
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-function readFileAsText(file) {
-  return new Promise(function(resolve, reject) {
-    var reader = new FileReader();
-    reader.onload = function() { resolve(reader.result); };
-    reader.onerror = function() { reject(new Error('Failed to read: ' + file.name)); };
-    reader.readAsText(file);
-  });
-}
-
-// =========================================
-// FRAUD ANALYSIS ENGINE (client-side port)
-// =========================================
-var MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+/* ============================================================
+   FRAUD ENGINE (ported from fraud_engine.js for client-side)
+   ============================================================ */
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function excelDateToStr(serial) {
-  if (!serial) return serial;
-  if (serial instanceof Date) {
-    var d2 = serial;
-    var dd2 = String(d2.getDate()).padStart(2, '0');
-    var mmm2 = MONTHS_SHORT[d2.getMonth()];
-    var yyyy2 = d2.getFullYear();
-    var hrs2 = String(d2.getHours()).padStart(2, '0');
-    var mins2 = String(d2.getMinutes()).padStart(2, '0');
-    return dd2 + '-' + mmm2 + '-' + yyyy2 + ' ' + hrs2 + ':' + mins2;
-  }
-  if (typeof serial !== 'number') return serial;
-  var utcDays = Math.floor(serial - 25569);
-  var utcValue = utcDays * 86400;
-  var d = new Date(utcValue * 1000);
-  var frac = serial - Math.floor(serial);
-  var totalSecs = Math.round(frac * 86400);
-  var hrs = Math.floor(totalSecs / 3600);
-  var mins = Math.floor((totalSecs % 3600) / 60);
-  var dd = String(d.getUTCDate()).padStart(2, '0');
-  var mmm = MONTHS_SHORT[d.getUTCMonth()];
-  var yyyy = d.getUTCFullYear();
-  return dd + '-' + mmm + '-' + yyyy + ' ' + String(hrs).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
+  if (!serial || typeof serial !== 'number') return serial;
+  const utcDays = Math.floor(serial - 25569);
+  const utcValue = utcDays * 86400;
+  const d = new Date(utcValue * 1000);
+  const frac = serial - Math.floor(serial);
+  const totalSecs = Math.round(frac * 86400);
+  const hrs = Math.floor(totalSecs / 3600);
+  const mins = Math.floor((totalSecs % 3600) / 60);
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mmm = MONTHS_SHORT[d.getUTCMonth()];
+  const yyyy = d.getUTCFullYear();
+  return `${dd}-${mmm}-${yyyy} ${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+}
+
+function dateOnlyDDMMMYYYY(dateTimeStr) {
+  if (!dateTimeStr || typeof dateTimeStr !== 'string') return dateTimeStr || '(unknown)';
+  return dateTimeStr.split(' ')[0];
 }
 
 function parseCSVLine(line) {
-  var result = [];
-  var current = '';
-  var inQuotes = false;
-  for (var i = 0; i < line.length; i++) {
-    var c = line[i];
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
     if (inQuotes) {
       if (c === '"' && line[i + 1] === '"') { current += '"'; i++; }
       else if (c === '"') inQuotes = false;
@@ -814,49 +749,65 @@ function parseCSVLine(line) {
   return result;
 }
 
-var analysisLog = [];
-function emit(msg) {
-  analysisLog.push(msg);
-  var logEl = document.getElementById('runLog');
+function engineLog(msg) {
+  const logEl = document.getElementById('runLog');
   if (logEl) {
     logEl.innerHTML += '<div class="log-line">' + msg + '</div>';
     logEl.scrollTop = logEl.scrollHeight;
   }
 }
 
-async function readDetailedReportsClient(files) {
-  if (!files || !files.length) throw new Error('No Detailed Reports files loaded. Go to Upload Data and select .xlsx files.');
-  var colMap = {
+function readDetailedReportsFromMemory() {
+  const files = uploadedFiles['Detailed Reports'];
+  if (!files.length) throw new Error('No files in Detailed Reports folder');
+
+  const colMap = {
     11: 'Restaurant Id', 12: 'Restaurant', 13: 'Branch Id', 14: 'Branch',
     15: 'Order Id', 17: 'Date / Time', 18: 'Payment Method', 19: 'Status',
-    20: 'Service Type', 24: 'SubTotal', 31: 'Total Sale', 63: 'Net Payment Per Order'
+    20: 'Service Type', 24: 'SubTotal', 31: 'Total Sale', 63: 'Net Payment Per Order',
   };
-  var colNums = Object.keys(colMap).map(Number);
-  var records = [];
-  var seenOrderIds = new Set();
-  var totalDetailedRows = 0;
+  const colNums = Object.keys(colMap).map(Number);
+  const records = [];
+  const seenOrderIds = new Set();
+  let totalDetailedRows = 0;
 
-  for (var fi = 0; fi < files.length; fi++) {
-    var file = files[fi];
-    emit('  Reading: ' + file.name + ' (' + fmtSize(file.size) + ')');
-    var data = await readFileAsArrayBuffer(file);
-    var wb = XLSX.read(data, { type: 'array', raw: true });
-    var rowNum = 0;
-    for (var si = 0; si < wb.SheetNames.length; si++) {
-      var ws = wb.Sheets[wb.SheetNames[si]];
-      var rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
-      for (var ri = 0; ri < rows.length; ri++) {
-        rowNum++;
-        if (rowNum <= 3) continue;
+  for (const file of files) {
+    engineLog('  Reading: ' + file.name);
+    if (file.name.endsWith('.csv')) {
+      const text = new TextDecoder().decode(file.data);
+      const lines = text.split(/\r?\n/);
+      let headers = null;
+      for (let i = 0; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        if (!headers) { headers = parseCSVLine(lines[i]); continue; }
+        if (i <= 2) continue;
         totalDetailedRows++;
-        var row = rows[ri];
+        const fields = parseCSVLine(lines[i]);
+        const rec = {};
+        colNums.forEach(c => { if (fields[c] !== undefined) rec[colMap[c]] = fields[c]; });
+        const totalSale = parseFloat(rec['Total Sale']);
+        if (isNaN(totalSale) || totalSale < 1000) return;
+        rec['Total Sale'] = totalSale;
+        rec['SubTotal'] = parseFloat(rec['SubTotal']) || 0;
+        rec['Net Payment Per Order'] = parseFloat(rec['Net Payment Per Order']) || 0;
+        rec['Restaurant Id'] = rec['Restaurant Id'] ? String(rec['Restaurant Id']) : '';
+        rec['Branch Id'] = rec['Branch Id'] ? String(rec['Branch Id']) : '';
+        rec['Order Id'] = rec['Order Id'] ? String(rec['Order Id']) : '';
+        if (seenOrderIds.has(rec['Order Id'])) continue;
+        seenOrderIds.add(rec['Order Id']);
+        records.push(rec);
+      }
+    } else {
+      const wb = XLSX.read(file.data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      for (let i = 3; i < data.length; i++) {
+        totalDetailedRows++;
+        const row = data[i];
         if (!row) continue;
-        var rec = {};
-        for (var ci = 0; ci < colNums.length; ci++) {
-          var idx = colNums[ci];
-          rec[colMap[idx]] = row[idx] !== undefined ? row[idx] : '';
-        }
-        var totalSale = parseFloat(rec['Total Sale']);
+        const rec = {};
+        colNums.forEach(c => { if (row[c] !== undefined && row[c] !== null) rec[colMap[c]] = row[c]; });
+        const totalSale = parseFloat(rec['Total Sale']);
         if (isNaN(totalSale) || totalSale < 1000) continue;
         rec['Total Sale'] = totalSale;
         rec['SubTotal'] = parseFloat(rec['SubTotal']) || 0;
@@ -870,69 +821,69 @@ async function readDetailedReportsClient(files) {
         records.push(rec);
       }
     }
-    emit('    Accumulated ' + records.length + ' records (Total Sale >= 1000) out of ' + totalDetailedRows + ' total');
+    engineLog('    Accumulated ' + records.length + ' records (Total Sale >= 1000) out of ' + totalDetailedRows + ' total');
   }
-  return { records: records, totalDetailedRows: totalDetailedRows };
+  return { records, totalDetailedRows };
 }
 
-function readBranchInquiryClient(files) {
-  if (!files || !files.length) return {};
-  return readFileAsArrayBuffer(files[0]).then(function(data) {
-    emit('  Reading Branch Inquiry: ' + files[0].name);
-    var wb = XLSX.read(data, { type: 'array' });
-    var ws = wb.Sheets[wb.SheetNames[0]];
-    var rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
-    var lookup = {};
-    for (var i = 1; i < rows.length; i++) {
-      var row = rows[i];
-      if (!row) continue;
-      var branchId = String(row[6] || '');
-      if (branchId) {
-        lookup[branchId] = {
-          'Customer account': String(row[0] || ''),
-          'Customer group': String(row[2] || '')
-        };
-      }
+function readBranchInquiryFromMemory() {
+  const files = uploadedFiles['Branch Inquiry'];
+  if (!files.length) return {};
+  engineLog('  Reading Branch Inquiry: ' + files[0].name);
+  const wb = XLSX.read(files[0].data, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+  const lookup = {};
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (!row) continue;
+    const branchId = String(row[6] || '');
+    if (branchId) {
+      lookup[branchId] = {
+        'Customer account': String(row[0] || ''),
+        'Customer group': String(row[2] || ''),
+      };
     }
-    emit('    ' + Object.keys(lookup).length + ' branch entries');
-    return lookup;
-  });
+  }
+  engineLog('    ' + Object.keys(lookup).length + ' branch entries');
+  return lookup;
 }
 
-function readAX365Client(files) {
-  if (!files || !files.length) return {};
-  return readFileAsArrayBuffer(files[0]).then(function(data) {
-    emit('  Reading AX365: ' + files[0].name);
-    var wb = XLSX.read(data, { type: 'array' });
-    var ws = wb.Sheets[wb.SheetNames[0]];
-    var rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
-    var lookup = {};
-    for (var i = 1; i < rows.length; i++) {
-      var row = rows[i];
-      if (!row) continue;
-      var branchId = String(row[4] || '');
-      if (branchId) lookup[branchId] = { 'Branch AX Code': String(row[6] || '') };
-    }
-    emit('    ' + Object.keys(lookup).length + ' AX entries');
-    return lookup;
-  });
+function readAX365FromMemory() {
+  const files = uploadedFiles['AX365'];
+  if (!files.length) return {};
+  engineLog('  Reading AX365: ' + files[0].name);
+  const wb = XLSX.read(files[0].data, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+  const lookup = {};
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (!row) continue;
+    const branchId = String(row[4] || '');
+    if (branchId) lookup[branchId] = { 'Branch AX Code': String(row[6] || '') };
+  }
+  engineLog('    ' + Object.keys(lookup).length + ' AX entries');
+  return lookup;
 }
 
-async function readCheckoutForOrdersClient(files, orderIds) {
-  if (!files || !files.length) return {};
-  var orderIdSet = new Set(orderIds);
-  var lookup = {};
-  for (var fi = 0; fi < files.length; fi++) {
-    var file = files[fi];
-    emit('  Checkout (orders): ' + file.name);
-    var text = await readFileAsText(file);
-    var lines = text.split('\n');
-    var headers = null, refIdx, actionIdx, respIdx, emailIdx, amountIdx;
-    var matchCount = 0;
-    for (var li = 0; li < lines.length; li++) {
-      var line = lines[li];
+function readCheckoutForOrdersFromMemory(orderIds) {
+  const files = uploadedFiles['Checkout'];
+  if (!files.length) return {};
+  const lookup = {};
+  const orderIdSet = new Set(orderIds);
+
+  for (const file of files) {
+    if (!file.name.endsWith('.csv')) continue;
+    engineLog('  Checkout (orders): ' + file.name);
+    const text = new TextDecoder().decode(file.data);
+    const lines = text.split(/\r?\n/);
+    let headers = null, refIdx, actionIdx, respIdx, emailIdx, amountIdx;
+    let lineCount = 0, matchCount = 0;
+    for (const line of lines) {
       if (!line.trim()) continue;
-      var fields = parseCSVLine(line);
+      lineCount++;
+      const fields = parseCSVLine(line);
       if (!headers) {
         headers = fields;
         refIdx = headers.indexOf('Reference');
@@ -942,37 +893,38 @@ async function readCheckoutForOrdersClient(files, orderIds) {
         amountIdx = headers.indexOf('Amount');
         continue;
       }
-      var ref = (fields[refIdx] || '').trim();
+      const ref = (fields[refIdx] || '').trim();
       if (!ref || !orderIdSet.has(ref)) continue;
-      var actionType = (fields[actionIdx] || '').trim();
+      const actionType = (fields[actionIdx] || '').trim();
       if (actionType && actionType !== 'Authorisation') continue;
-      var respDesc = (fields[respIdx] || '').trim();
+      const respDesc = (fields[respIdx] || '').trim();
       if (respDesc && respDesc !== 'Approved') continue;
-      var amount = parseFloat(fields[amountIdx]) || 0;
-      var email = (fields[emailIdx] || '').trim();
-      if (!lookup[ref]) { lookup[ref] = { actionType: actionType, respDesc: respDesc, email: email, amount: amount }; matchCount++; }
-      else if (actionType === 'Authorisation') { lookup[ref] = { actionType: actionType, respDesc: respDesc, email: email, amount: amount }; }
+      const amount = parseFloat(fields[amountIdx]) || 0;
+      const email = (fields[emailIdx] || '').trim();
+      if (!lookup[ref]) { lookup[ref] = { actionType, respDesc, email, amount }; matchCount++; }
+      else if (actionType === 'Authorisation') { lookup[ref] = { actionType, respDesc, email, amount }; }
     }
-    emit('    ' + lines.length + ' lines, ' + matchCount + ' matches');
+    engineLog('    ' + lineCount + ' lines, ' + matchCount + ' matches');
   }
   return lookup;
 }
 
-async function readCheckoutEmailStatsClient(files) {
-  if (!files || !files.length) return [];
-  var emailData = {};
-  for (var fi = 0; fi < files.length; fi++) {
-    var file = files[fi];
-    emit('  Checkout (emails): ' + file.name);
-    var text = await readFileAsText(file);
-    var lines = text.split('\n');
-    var headers = null, emailIdx, dateIdx, actionIdx, amountIdx;
-    var lineCount = 0;
-    for (var li = 0; li < lines.length; li++) {
-      var line = lines[li];
+function readCheckoutEmailStatsFromMemory() {
+  const files = uploadedFiles['Checkout'];
+  if (!files.length) return [];
+  const emailData = {};
+
+  for (const file of files) {
+    if (!file.name.endsWith('.csv')) continue;
+    engineLog('  Checkout (emails): ' + file.name);
+    const text = new TextDecoder().decode(file.data);
+    const lines = text.split(/\r?\n/);
+    let headers = null, emailIdx, dateIdx, actionIdx, amountIdx;
+    let lineCount = 0;
+    for (const line of lines) {
       if (!line.trim()) continue;
       lineCount++;
-      var fields = parseCSVLine(line);
+      const fields = parseCSVLine(line);
       if (!headers) {
         headers = fields;
         emailIdx = headers.indexOf('Customer Email');
@@ -981,59 +933,57 @@ async function readCheckoutEmailStatsClient(files) {
         amountIdx = headers.indexOf('Amount');
         continue;
       }
-      var email = (fields[emailIdx] || '').trim();
+      const email = (fields[emailIdx] || '').trim();
       if (!email) continue;
-      var actionType = (fields[actionIdx] || '').trim();
+      const actionType = (fields[actionIdx] || '').trim();
       if (actionType !== 'Authorisation') continue;
-      var dateStr = (fields[dateIdx] || '').trim();
-      var amount = parseFloat(fields[amountIdx]) || 0;
+      const dateStr = (fields[dateIdx] || '').trim();
+      const amount = parseFloat(fields[amountIdx]) || 0;
       if (!emailData[email]) emailData[email] = { count: 0, totalAmount: 0, timestamps: [] };
       emailData[email].count++;
       emailData[email].totalAmount += amount;
       if (dateStr) emailData[email].timestamps.push(dateStr);
     }
-    emit('    ' + lineCount + ' lines scanned');
+    engineLog('    ' + lineCount + ' lines scanned');
   }
 
-  var result = Object.entries(emailData)
-    .filter(function(e) { return e[1].count > 1; })
-    .map(function(e) {
-      var email = e[0], d = e[1];
+  const result = Object.entries(emailData)
+    .filter(([_, d]) => d.count > 1)
+    .map(([email, d]) => {
       d.timestamps.sort();
-      var consecutiveCount = 0;
-      var maxBurst = 1, currentBurst = 1;
-      for (var i = 1; i < d.timestamps.length; i++) {
-        var t1 = new Date(d.timestamps[i - 1]).getTime();
-        var t2 = new Date(d.timestamps[i]).getTime();
-        var diffMins = (t2 - t1) / 60000;
+      let consecutiveCount = 0;
+      let maxBurst = 1, currentBurst = 1;
+      for (let i = 1; i < d.timestamps.length; i++) {
+        const t1 = new Date(d.timestamps[i - 1]).getTime();
+        const t2 = new Date(d.timestamps[i]).getTime();
+        const diffMins = (t2 - t1) / 60000;
         if (diffMins <= 60) { currentBurst++; consecutiveCount++; }
         else { maxBurst = Math.max(maxBurst, currentBurst); currentBurst = 1; }
       }
       maxBurst = Math.max(maxBurst, currentBurst);
-      var suspicionScore = d.count * 2 + consecutiveCount * 5 + maxBurst * 3;
+      const suspicionScore = d.count * 2 + consecutiveCount * 5 + maxBurst * 3;
       return {
-        email: email, count: d.count, totalAmount: Math.round(d.totalAmount * 100) / 100,
-        consecutiveCount: consecutiveCount, maxBurst: maxBurst,
+        email, count: d.count, totalAmount: Math.round(d.totalAmount * 100) / 100,
+        consecutiveCount, maxBurst,
         firstSeen: d.timestamps[0] || '', lastSeen: d.timestamps[d.timestamps.length - 1] || '',
-        suspicionScore: suspicionScore
+        suspicionScore,
       };
     })
-    .sort(function(a, b) { return b.suspicionScore - a.suspicionScore; });
+    .sort((a, b) => b.suspicionScore - a.suspicionScore);
   return result;
 }
 
 function mergeData(records, branchInq, ax365, checkout) {
-  for (var i = 0; i < records.length; i++) {
-    var rec = records[i];
-    var bid = rec['Branch Id'], oid = rec['Order Id'];
-    var bi = branchInq[bid] || {};
+  for (const rec of records) {
+    const bid = rec['Branch Id'], oid = rec['Order Id'];
+    const bi = branchInq[bid] || {};
     rec['Customer group'] = bi['Customer group'] || '';
     rec['Customer account'] = bi['Customer account'] || '';
-    var ax = ax365[bid] || {};
+    const ax = ax365[bid] || {};
     rec['Branch AX Code'] = ax['Branch AX Code'] || '';
     rec['MSD Checker'] = rec['Customer account'] && rec['Branch AX Code']
       ? (rec['Customer account'] === rec['Branch AX Code'] ? 'True' : 'False') : '';
-    var co = checkout[oid] || {};
+    const co = checkout[oid] || {};
     rec['Action Type'] = co.actionType || '';
     rec['Response Description'] = co.respDesc || '';
     rec['Customer Email'] = co.email || '';
@@ -1043,35 +993,33 @@ function mergeData(records, branchInq, ax365, checkout) {
 }
 
 function applyFraudRules(records) {
-  var dupByRestaurantId = {}, dupByBranchId = {}, dupByCustGroup = {}, dupByEmail = {}, emailCounts = {};
-  for (var i = 0; i < records.length; i++) {
-    var rec = records[i];
-    var ts = rec['Total Sale'], rid = rec['Restaurant Id'], bid = rec['Branch Id'];
-    var cg = rec['Customer group'], em = rec['Customer Email'];
-    dupByRestaurantId[rid + '_' + ts] = (dupByRestaurantId[rid + '_' + ts] || 0) + 1;
-    dupByBranchId[bid + '_' + ts] = (dupByBranchId[bid + '_' + ts] || 0) + 1;
-    if (cg) dupByCustGroup[cg + '_' + ts] = (dupByCustGroup[cg + '_' + ts] || 0) + 1;
+  const dupByRestaurantId = {}, dupByBranchId = {}, dupByCustGroup = {}, dupByEmail = {}, emailCounts = {};
+  for (const rec of records) {
+    const ts = rec['Total Sale'], rid = rec['Restaurant Id'], bid = rec['Branch Id'];
+    const cg = rec['Customer group'], em = rec['Customer Email'];
+    dupByRestaurantId[`${rid}_${ts}`] = (dupByRestaurantId[`${rid}_${ts}`] || 0) + 1;
+    dupByBranchId[`${bid}_${ts}`] = (dupByBranchId[`${bid}_${ts}`] || 0) + 1;
+    if (cg) dupByCustGroup[`${cg}_${ts}`] = (dupByCustGroup[`${cg}_${ts}`] || 0) + 1;
     if (em) {
-      dupByEmail[em + '_' + ts] = (dupByEmail[em + '_' + ts] || 0) + 1;
+      dupByEmail[`${em}_${ts}`] = (dupByEmail[`${em}_${ts}`] || 0) + 1;
       emailCounts[em] = (emailCounts[em] || 0) + 1;
     }
   }
-  for (var i = 0; i < records.length; i++) {
-    var rec = records[i];
-    var reasons = [];
-    var ts = rec['Total Sale'], rid = rec['Restaurant Id'], bid = rec['Branch Id'];
-    var cg = rec['Customer group'], em = rec['Customer Email'];
-    var pm = (rec['Payment Method'] || '').toLowerCase();
-    var coAmt = rec['Checkout Amount'];
+  for (const rec of records) {
+    const reasons = [];
+    const ts = rec['Total Sale'], rid = rec['Restaurant Id'], bid = rec['Branch Id'];
+    const cg = rec['Customer group'], em = rec['Customer Email'];
+    const pm = (rec['Payment Method'] || '').toLowerCase();
+    const coAmt = rec['Checkout Amount'];
     if (ts >= 10000) reasons.push('Total Sale unusually high: AED ' + ts.toLocaleString());
-    if (dupByRestaurantId[rid + '_' + ts] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Restaurant Id ' + rid);
-    if (dupByBranchId[bid + '_' + ts] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Branch Id ' + bid);
-    if (cg && dupByCustGroup[cg + '_' + ts] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Customer Group ' + cg);
-    if (em && dupByEmail[em + '_' + ts] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Customer Email');
+    if (dupByRestaurantId[`${rid}_${ts}`] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Restaurant Id ' + rid);
+    if (dupByBranchId[`${bid}_${ts}`] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Branch Id ' + bid);
+    if (cg && dupByCustGroup[`${cg}_${ts}`] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Customer Group ' + cg);
+    if (em && dupByEmail[`${em}_${ts}`] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Customer Email');
     if (em && emailCounts[em] > 2) reasons.push('Customer Email used ' + emailCounts[em] + ' times (suspicious frequency)');
     if (pm === 'credit card' || pm === 'talabat credit') {
       if (coAmt !== null && coAmt !== undefined) {
-        var diff = coAmt - ts;
+        const diff = coAmt - ts;
         if (diff < -200) reasons.push('Checkout Amount (' + coAmt + ') minus Total Sale (' + ts + ') = ' + diff.toFixed(2) + ', below -200 threshold');
       }
     }
@@ -1083,252 +1031,190 @@ function applyFraudRules(records) {
 }
 
 function applyPotentialFraudFilter(records) {
-  var dupByRidEmail = {};
-  var emailCounts = {};
-  for (var i = 0; i < records.length; i++) {
-    var rec = records[i];
+  const dupByRidEmail = {};
+  const emailCounts = {};
+  for (const rec of records) {
     if (rec['Potential Fraud'] !== 'Yes') continue;
-    var ts = rec['Total Sale'], rid = rec['Restaurant Id'], em = rec['Customer Email'];
+    const ts = rec['Total Sale'], rid = rec['Restaurant Id'], em = rec['Customer Email'];
     if (rid && em) {
-      var key = rid + '_' + em + '_' + ts;
+      const key = `${rid}_${em}_${ts}`;
       dupByRidEmail[key] = (dupByRidEmail[key] || 0) + 1;
     }
     if (em) emailCounts[em] = (emailCounts[em] || 0) + 1;
   }
-  var potentialFraud = [];
-  for (var i = 0; i < records.length; i++) {
-    var rec = records[i];
+  const potentialFraud = [];
+  for (const rec of records) {
     if (rec['Potential Fraud'] !== 'Yes') continue;
-    var ts = rec['Total Sale'], rid = rec['Restaurant Id'], em = rec['Customer Email'];
-    var reasons = [];
+    const ts = rec['Total Sale'], rid = rec['Restaurant Id'], em = rec['Customer Email'];
+    const reasons = [];
     if (ts >= 10000) reasons.push('Unusually high amount: AED ' + ts.toLocaleString());
     if (em && emailCounts[em] > 1) reasons.push('Email used ' + emailCounts[em] + ' times across flagged orders');
-    if (rid && em && dupByRidEmail[rid + '_' + em + '_' + ts] > 1) {
+    if (rid && em && dupByRidEmail[`${rid}_${em}_${ts}`] > 1) {
       reasons.push('Duplicate Total Sale (AED ' + ts + ') with same Restaurant Id ' + rid + ' AND same email ' + em);
     }
     if (reasons.length > 0) {
       rec['Potential Fraud Reasons'] = reasons.join('; ');
       rec['Potential Fraud Filter'] = 'Yes';
       potentialFraud.push(rec);
+    } else {
+      rec['Potential Fraud Filter'] = 'No';
+      rec['Potential Fraud Reasons'] = '';
     }
   }
   return potentialFraud;
 }
 
-// =========================================
-// ANALYSIS ORCHESTRATION
-// =========================================
-async function runAnalysis() {
-  if (analysisRunning) { toast('Analysis already running', 'error'); return; }
-  var detFiles = uploadedFiles['detailed-reports'];
-  if (!detFiles.length) { toast('No Detailed Reports files loaded. Go to Upload Data first.', 'error'); return; }
-  analysisRunning = true;
-  analysisLog = [];
-  var btn = document.getElementById('btnRun');
+/* ============================================================
+   UI FUNCTIONS (identical to original)
+   ============================================================ */
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector('.nav-item[data-page="' + page + '"]').classList.add('active');
+  const titles = {
+    'dashboard': 'Fraud Analysis Dashboard', 'fraud-table': 'Potential Fraud Orders',
+    'emails': 'Suspicious Customer Emails', 'upload': 'Upload Data Files',
+    'run': 'Run Analysis', 'share': 'Share & Export', 'settings': 'Settings',
+  };
+  document.getElementById('pageTitle').textContent = titles[page] || '';
+}
+
+let settingsUnlocked = false;
+
+function handleSettingsNavigation(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (settingsUnlocked) { showPage('settings'); return; }
+  const pw = prompt('Enter Administrative Master Password to access configuration settings:');
+  if (pw === null) {
+    toast('Access Denied: Password entry cancelled.', 'error');
+    showPage('dashboard');
+    return;
+  }
+  if (pw === '543210') {
+    settingsUnlocked = true;
+    toast('Access Granted', 'success');
+    showPage('settings');
+  } else {
+    toast('Access Denied: Invalid Password.', 'error');
+    showPage('dashboard');
+  }
+}
+
+function toast(msg, type) {
+  type = type || 'info';
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = '<span>' + (type === 'success' ? '&#x2705;' : type === 'error' ? '&#x274C;' : '&#x2139;&#xFE0F;') + '</span> ' + msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(function() { el.remove(); }, 5000);
+}
+
+let currentRole = 'owner';
+function fmtNum(n) { return n != null ? Number(n).toLocaleString() : '--'; }
+function fmtAED(n) { return n != null ? 'AED ' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'; }
+function stripTime(dt) { return dt ? String(dt).split(' ')[0] : ''; }
+
+function toggleDownloadMenu(e) {
+  e.stopPropagation();
+  document.getElementById('downloadMenu').classList.toggle('show');
+}
+function closeDownloadMenu() { document.getElementById('downloadMenu').classList.remove('show'); }
+document.addEventListener('click', function() { closeDownloadMenu(); });
+
+function asyncBtn(btn, action) {
+  const orig = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = '&#x23F3; Running...';
-  var prog = document.getElementById('runProgress');
-  prog.style.display = 'block';
-  var logEl = document.getElementById('runLog');
-  logEl.innerHTML = '';
-  document.getElementById('runFill').style.width = '5%';
-
-  var fileErrors = [];
-  var t0 = performance.now();
-
-  try {
-    emit('=== TALABAT FRAUD HUNTER (Client-Side) ===');
-    emit('[1/7] Reading Detailed Reports...');
-    document.getElementById('runFill').style.width = '10%';
-    var result = await readDetailedReportsClient(detFiles);
-    var records = result.records;
-    var totalDetailedRows = result.totalDetailedRows;
-
-    emit('[2/7] Reading Branch Inquiry...');
-    document.getElementById('runFill').style.width = '25%';
-    var branchInq = {};
-    try { branchInq = await readBranchInquiryClient(uploadedFiles['branch-inquiry']); }
-    catch (err) { fileErrors.push({ step: 'Branch Inquiry', error: err.message, fix: 'Check the .xlsx file. Ensure column G (index 6) contains Branch IDs.' }); emit('  WARNING: Branch Inquiry failed (' + err.message + '), continuing without it.'); }
-
-    emit('[3/7] Reading AX365...');
-    document.getElementById('runFill').style.width = '35%';
-    var ax365 = {};
-    try { ax365 = await readAX365Client(uploadedFiles['ax365']); }
-    catch (err) { fileErrors.push({ step: 'AX365', error: err.message, fix: 'Check the .xlsx file. Ensure column E (index 4) has Branch IDs and column G (index 6) has AX Codes.' }); emit('  WARNING: AX365 failed (' + err.message + '), continuing without it.'); }
-
-    emit('[4/7] Reading Checkout (matching orders)...');
-    document.getElementById('runFill').style.width = '45%';
-    var orderIds = records.map(function(r) { return r['Order Id']; });
-    var checkout = {};
-    try { checkout = await readCheckoutForOrdersClient(uploadedFiles['checkout'], orderIds); }
-    catch (err) { fileErrors.push({ step: 'Checkout (order matching)', error: err.message, fix: 'Ensure .csv files have headers: Reference, Action Type, Response Description, Customer Email, Amount.' }); emit('  WARNING: Checkout order matching failed (' + err.message + '), continuing without it.'); }
-
-    emit('[5/7] Merging and applying fraud rules...');
-    document.getElementById('runFill').style.width = '60%';
-    mergeData(records, branchInq, ax365, checkout);
-    applyFraudRules(records);
-    var potentialFraud = applyPotentialFraudFilter(records);
-
-    emit('[6/7] Scanning checkout emails...');
-    document.getElementById('runFill').style.width = '75%';
-    var allCheckoutEmails = [];
-    try { allCheckoutEmails = await readCheckoutEmailStatsClient(uploadedFiles['checkout']); }
-    catch (err) { fileErrors.push({ step: 'Checkout (email stats)', error: err.message, fix: 'Ensure .csv files have headers: Customer Email, Action Date UTC, Action Type, Amount.' }); emit('  WARNING: Checkout email stats failed (' + err.message + '), continuing without it.'); }
-    var checkoutEmailTop20 = allCheckoutEmails.slice(0, 20);
-
-    emit('[7/7] Building dashboard...');
-    document.getElementById('runFill').style.width = '90%';
-
-    var potentialFraudTotal = potentialFraud.reduce(function(s, r) { return s + (r['Total Sale'] || 0); }, 0);
-    var fraudPct = totalDetailedRows > 0 ? ((potentialFraud.length / totalDetailedRows) * 100).toFixed(2) : '0.00';
-
-    potentialFraud.sort(function(a, b) {
-      var diff = (b['Total Sale'] || 0) - (a['Total Sale'] || 0);
-      if (diff !== 0) return diff;
-      var ridCmp = (a['Restaurant Id'] || '').localeCompare(b['Restaurant Id'] || '');
-      if (ridCmp !== 0) return ridCmp;
-      return (a['Customer Email'] || '').localeCompare(b['Customer Email'] || '');
-    });
-
-    dashboardData = {
-      summary: {
-        totalDetailedRows: totalDetailedRows,
-        potentialFraudCount: potentialFraud.length,
-        potentialFraudValue: potentialFraudTotal,
-        potentialFraudPct: fraudPct
-      },
-      potentialFraudRecords: potentialFraud.map(function(r, i) {
-        return {
-          serial: i + 1, restaurantId: r['Restaurant Id'], branchId: r['Branch Id'],
-          restaurant: r['Restaurant'], branch: r['Branch'], orderId: r['Order Id'],
-          dateTime: r['Date / Time'],
-          paymentMethod: r['Payment Method'] || '', status: r['Status'] || '', serviceType: r['Service Type'] || '',
-          subTotal: r['SubTotal'], totalSale: r['Total Sale'], netPayment: r['Net Payment Per Order'],
-          customerGroup: r['Customer group'], customerAccount: r['Customer account'],
-          customerEmail: r['Customer Email'], reasons: r['Potential Fraud Reasons']
-        };
-      }),
-      checkoutEmailTop20: checkoutEmailTop20,
-      fileErrors: fileErrors.length > 0 ? fileErrors : null,
-      generatedAt: new Date().toISOString()
-    };
-
-    document.getElementById('runFill').style.width = '100%';
-
-    try { localStorage.setItem('fraudHunterResults', JSON.stringify(dashboardData)); }
-    catch (e) { /* localStorage full, ignore */ }
-
-    var elapsed = ((performance.now() - t0) / 1000).toFixed(1);
-    emit('');
-    emit('Done in ' + elapsed + 's | ' + totalDetailedRows + ' total orders | ' + potentialFraud.length + ' potential fraud | ' + checkoutEmailTop20.length + ' suspicious emails');
-
-    if (fileErrors.length > 0) {
-      emit('');
-      emit('--- WARNINGS ---');
-      fileErrors.forEach(function(e) { emit('  [' + e.step + '] ' + e.error + ' | Fix: ' + e.fix); });
-      logEl.innerHTML += '<div class="log-line" style="color:#F59E0B;">&#x26A0;&#xFE0F; Analysis complete with ' + fileErrors.length + ' warning(s)</div>';
-      toast('Analysis complete with ' + fileErrors.length + ' warning(s). Check the log.', 'info');
-    } else {
-      logEl.innerHTML += '<div class="log-line" style="color:#CFFF00;">&#x2705; Analysis complete!</div>';
-      toast('Analysis complete! View the dashboard for results.', 'success');
-    }
-
-    renderDashboard();
-    checkCelebration();
-    document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleString();
-
-  } catch (err) {
-    logEl.innerHTML += '<div class="log-line" style="color:#EF4444;">&#x274C; Error: ' + err.message + '</div>';
-    toast('Analysis failed: ' + err.message, 'error');
-  } finally {
-    analysisRunning = false;
+  btn.innerHTML = '&#x23F3; Sending...';
+  return action().then(function(result) {
+    btn.innerHTML = '&#x2705; Sent!';
+    setTimeout(function() { btn.innerHTML = orig; btn.disabled = false; }, 3000);
+    return result;
+  }).catch(function(err) {
+    btn.innerHTML = orig;
     btn.disabled = false;
-    btn.innerHTML = '&#x1F680; Run Analysis';
-  }
+    throw err;
+  });
 }
 
-// =========================================
-// CLIENT-SIDE FILE MANAGEMENT
-// =========================================
-function selectFolder(el) {
-  document.querySelectorAll('.folder-tab').forEach(function(t) { t.classList.remove('active'); });
-  el.classList.add('active');
-  currentFolder = el.dataset.folder;
+function applyRBAC() {
+  var role = currentRole;
+  document.querySelectorAll('[data-role-min]').forEach(function(el) {
+    var min = el.dataset.roleMin;
+    var levels = { viewer: 0, editor: 1, owner: 2 };
+    el.style.display = (levels[role] >= levels[min]) ? '' : 'none';
+  });
+  document.querySelectorAll('.rbac-hide-viewer').forEach(function(el) {
+    el.style.display = role === 'viewer' ? 'none' : '';
+  });
 }
 
-function loadFilesToFolder(folder, fileList) {
-  if (!fileList || !fileList.length) return;
-  for (var i = 0; i < fileList.length; i++) {
-    var exists = uploadedFiles[folder].some(function(f) { return f.name === fileList[i].name; });
-    if (!exists) uploadedFiles[folder].push(fileList[i]);
-  }
-  toast(fileList.length + ' file(s) loaded to ' + folder, 'success');
-  renderFileList();
+function getFilteredRecords() {
+  if (!dashboardData || !dashboardData.potentialFraudRecords) return [];
+  if (!activeDrillDown) return dashboardData.potentialFraudRecords;
+  var field = activeDrillDown.field, value = activeDrillDown.value;
+  return dashboardData.potentialFraudRecords.filter(function(r) {
+    if (field === 'customerGroup') return r.customerGroup === value;
+    if (field === 'date') return (r.dateTime || '').substring(0, 11) === value;
+    if (field === 'restaurant') return r.restaurant === value;
+    if (field === 'branch') return r.branch === value;
+    if (field === 'restaurantId') return r.restaurantId === value;
+    if (field === 'branchId') return r.branchId === value;
+    return true;
+  });
 }
 
-function handleDrop(e) {
-  e.preventDefault();
-  e.target.closest('.upload-zone').classList.remove('dragover');
-  var files = e.dataTransfer.files;
-  if (files.length) loadFilesToFolder(currentFolder, files);
+function applyDrillDown(field, value) {
+  activeDrillDown = { field: field, value: value };
+  var bar = document.getElementById('activeFilterBar');
+  document.getElementById('activeFilterText').textContent = 'Filtered: ' + field + ' = "' + value + '"';
+  bar.style.display = 'flex';
+  renderDashboardWithFilter();
 }
 
-function removeFile(folder, fileName) {
-  uploadedFiles[folder] = uploadedFiles[folder].filter(function(f) { return f.name !== fileName; });
-  renderFileList();
-  toast('Removed: ' + fileName, 'info');
+function clearDrillDown() {
+  activeDrillDown = null;
+  document.getElementById('activeFilterBar').style.display = 'none';
+  renderDashboard();
 }
 
-function renderFileList() {
-  var container = document.getElementById('fileListContainer');
-  var totalFiles = 0;
-  var html = '';
-  var folderNames = { 'detailed-reports': 'Detailed Reports', 'checkout': 'Checkout', 'ax365': 'AX365', 'branch-inquiry': 'Branch Inquiry' };
+function renderDashboardWithFilter() {
+  if (!dashboardData) return;
+  var filtered = getFilteredRecords();
+  var count = filtered.length;
+  var totalVal = filtered.reduce(function(s, r) { return s + (r.totalSale || 0); }, 0);
+  var totalOrders = dashboardData.summary.totalDetailedRows;
+  var pct = totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(2) : '0.00';
+  document.getElementById('statDetailedTotal').textContent = fmtNum(totalOrders);
+  document.getElementById('statPotentialFraud').textContent = fmtNum(count);
+  document.getElementById('statFraudValue').textContent = fmtAED(totalVal);
+  document.getElementById('statFraudPct').textContent = pct + '%';
+  renderChartsFromRecords(filtered);
+}
 
-  for (var folder in uploadedFiles) {
-    var files = uploadedFiles[folder];
-    html += '<h4 style="margin:12px 0 6px;font-size:13px;color:var(--primary);">&#x1F4C1; ' + folderNames[folder] + ' (' + files.length + ')</h4>';
-    if (!files.length) {
-      html += '<p style="font-size:12px;color:var(--text-muted);margin-left:20px;">No files loaded</p>';
-      continue;
+async function loadResults() {
+  try {
+    var stored = localStorage.getItem('fraudHunterResults');
+    if (stored) {
+      dashboardData = JSON.parse(stored);
+      activeDrillDown = null;
+      document.getElementById('activeFilterBar').style.display = 'none';
+      renderDashboard();
+      document.getElementById('lastUpdated').textContent = dashboardData.generatedAt
+        ? 'Updated: ' + new Date(dashboardData.generatedAt).toLocaleString() : '';
+      checkCelebration();
+    } else {
+      toast('No analysis results yet. Upload data and run analysis first.', 'info');
     }
-    html += '<ul class="file-list">';
-    for (var i = 0; i < files.length; i++) {
-      var f = files[i];
-      totalFiles++;
-      html += '<li class="file-item">';
-      html += '<span class="name">&#x1F4C4; ' + f.name + '</span>';
-      html += '<span class="meta">' + fmtSize(f.size) + '</span>';
-      html += '<button class="btn btn-sm btn-danger" onclick="removeFile(\'' + folder + '\',\'' + f.name.replace(/'/g, "\\'") + '\')" style="padding:2px 8px;font-size:11px;">&#x2716;</button>';
-      html += '</li>';
-    }
-    html += '</ul>';
-  }
-
-  if (totalFiles === 0) {
-    container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">No files loaded yet. Select files above to begin.</p>';
-  } else {
-    container.innerHTML = html;
-  }
-}
-
-// =========================================
-// DASHBOARD RENDERING
-// =========================================
-function refreshDashboard() {
-  if (dashboardData) {
-    activeDrillDown = null;
-    document.getElementById('activeFilterBar').style.display = 'none';
-    renderDashboard();
-    toast('Dashboard refreshed', 'success');
-  } else {
-    toast('No analysis results yet. Upload data and run analysis first.', 'info');
-  }
+  } catch (e) { console.error(e); }
 }
 
 function checkCelebration() {
   if (!dashboardData) return;
-  if (dashboardData.summary.potentialFraudCount === 0) showCelebration();
+  if (dashboardData.summary.potentialFraudCount === 0) {
+    showCelebration();
+  }
 }
 
 function showCelebration() {
@@ -1358,48 +1244,6 @@ function launchConfetti() {
   }
 }
 
-function getFilteredRecords() {
-  if (!dashboardData || !dashboardData.potentialFraudRecords) return [];
-  if (!activeDrillDown) return dashboardData.potentialFraudRecords;
-  var field = activeDrillDown.field, value = activeDrillDown.value;
-  return dashboardData.potentialFraudRecords.filter(function(r) {
-    if (field === 'customerGroup') return r.customerGroup === value;
-    if (field === 'date') return (r.dateTime || '').substring(0, 11) === value;
-    if (field === 'restaurant') return r.restaurant === value;
-    if (field === 'branch') return r.branch === value;
-    if (field === 'restaurantId') return r.restaurantId === value;
-    if (field === 'branchId') return r.branchId === value;
-    return true;
-  });
-}
-
-function applyDrillDown(field, value) {
-  activeDrillDown = { field: field, value: value };
-  document.getElementById('activeFilterText').textContent = 'Filtered: ' + field + ' = "' + value + '"';
-  document.getElementById('activeFilterBar').style.display = 'flex';
-  renderDashboardWithFilter();
-}
-
-function clearDrillDown() {
-  activeDrillDown = null;
-  document.getElementById('activeFilterBar').style.display = 'none';
-  renderDashboard();
-}
-
-function renderDashboardWithFilter() {
-  if (!dashboardData) return;
-  var filtered = getFilteredRecords();
-  var count = filtered.length;
-  var totalVal = filtered.reduce(function(s, r) { return s + (r.totalSale || 0); }, 0);
-  var totalOrders = dashboardData.summary.totalDetailedRows;
-  var pct = totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(2) : '0.00';
-  document.getElementById('statDetailedTotal').textContent = fmtNum(totalOrders);
-  document.getElementById('statPotentialFraud').textContent = fmtNum(count);
-  document.getElementById('statFraudValue').textContent = fmtAED(totalVal);
-  document.getElementById('statFraudPct').textContent = pct + '%';
-  renderChartsFromRecords(filtered);
-}
-
 function renderDashboard() {
   if (!dashboardData) return;
   var s = dashboardData.summary;
@@ -1415,7 +1259,6 @@ function renderDashboard() {
 function renderFraudTable() {
   var tbody = document.getElementById('fraudTableBody');
   tbody.innerHTML = '';
-  if (!dashboardData) return;
   var records = (dashboardData.potentialFraudRecords || []).slice();
   var sRest = (document.getElementById('fraudSearchRestaurant').value || '').toLowerCase();
   var sRID = (document.getElementById('fraudSearchRID').value || '').toLowerCase();
@@ -1431,23 +1274,22 @@ function renderFraudTable() {
     va = String(va || ''); vb = String(vb || '');
     return fraudSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
   });
-  var html = '';
-  for (var i = 0; i < records.length; i++) {
-    var r = records[i];
-    html += '<tr><td>' + (i + 1) + '</td>';
-    html += '<td>' + r.restaurantId + '</td><td>' + r.branchId + '</td>';
-    html += '<td>' + r.restaurant + '</td><td>' + r.branch + '</td><td>' + r.orderId + '</td>';
-    html += '<td>' + stripTime(r.dateTime) + '</td>';
-    html += '<td>' + (r.paymentMethod || '') + '</td><td>' + (r.status || '') + '</td><td>' + (r.serviceType || '') + '</td>';
-    html += '<td>' + fmtAED(r.subTotal) + '</td>';
-    html += '<td style="font-weight:600;color:var(--danger);">' + fmtAED(r.totalSale) + '</td>';
-    html += '<td>' + fmtAED(r.netPayment) + '</td>';
-    html += '<td><span class="badge badge-warning">' + (r.customerGroup || '-') + '</span></td>';
-    html += '<td>' + (r.customerAccount || '-') + '</td>';
-    html += '<td style="font-size:12px;">' + (r.customerEmail || '-') + '</td>';
-    html += '<td style="font-size:11px;color:var(--text-muted);max-width:300px;white-space:normal;">' + (r.reasons || '') + '</td></tr>';
-  }
-  tbody.innerHTML = html;
+  records.forEach(function(r, i) {
+    tbody.innerHTML += '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td>' + r.restaurantId + '</td><td>' + r.branchId + '</td>' +
+      '<td>' + r.restaurant + '</td><td>' + r.branch + '</td><td>' + r.orderId + '</td>' +
+      '<td>' + stripTime(r.dateTime) + '</td>' +
+      '<td>' + (r.paymentMethod || '') + '</td><td>' + (r.status || '') + '</td><td>' + (r.serviceType || '') + '</td>' +
+      '<td>' + fmtAED(r.subTotal) + '</td>' +
+      '<td style="font-weight:600;color:var(--danger);">' + fmtAED(r.totalSale) + '</td>' +
+      '<td>' + fmtAED(r.netPayment) + '</td>' +
+      '<td><span class="badge badge-warning">' + (r.customerGroup || '-') + '</span></td>' +
+      '<td>' + (r.customerAccount || '-') + '</td>' +
+      '<td style="font-size:12px;">' + (r.customerEmail || '-') + '</td>' +
+      '<td style="font-size:11px;color:var(--text-muted);max-width:300px;white-space:normal;">' + r.reasons + '</td>' +
+      '</tr>';
+  });
 }
 
 function filterFraudTable() { renderFraudTable(); }
@@ -1467,7 +1309,6 @@ function sortFraudTable(field) {
 function renderEmailTable() {
   var tbody = document.getElementById('emailTableBody');
   tbody.innerHTML = '';
-  if (!dashboardData) return;
   var emails = (dashboardData.checkoutEmailTop20 || []).slice();
   var search = (document.getElementById('emailSearch').value || '').toLowerCase();
   if (search) emails = emails.filter(function(e) { return (e.email || '').toLowerCase().includes(search); });
@@ -1477,18 +1318,16 @@ function renderEmailTable() {
     var va = a[emailSortField] || 0, vb = b[emailSortField] || 0;
     return emailSortAsc ? va - vb : vb - va;
   });
-  var html = '';
-  for (var i = 0; i < emails.length; i++) {
-    var e = emails[i];
-    html += '<tr><td>' + (i + 1) + '</td>';
-    html += '<td style="font-weight:500;">' + e.email + '</td>';
-    html += '<td><span class="badge badge-danger">' + e.count + '</span></td>';
-    html += '<td>' + fmtAED(e.totalAmount) + '</td>';
-    html += '<td><span class="badge ' + (e.maxBurst > 3 ? 'badge-danger' : 'badge-warning') + '">' + e.maxBurst + '</span></td>';
-    html += '<td style="font-size:12px;">' + (e.firstSeen || '-') + '</td>';
-    html += '<td style="font-size:12px;">' + (e.lastSeen || '-') + '</td></tr>';
-  }
-  tbody.innerHTML = html;
+  emails.forEach(function(e, i) {
+    tbody.innerHTML += '<tr>' +
+      '<td>' + (i + 1) + '</td><td style="font-weight:500;">' + e.email + '</td>' +
+      '<td><span class="badge badge-danger">' + e.count + '</span></td>' +
+      '<td>' + fmtAED(e.totalAmount) + '</td>' +
+      '<td><span class="badge ' + (e.maxBurst > 3 ? 'badge-danger' : 'badge-warning') + '">' + e.maxBurst + '</span></td>' +
+      '<td style="font-size:12px;">' + (e.firstSeen || '-') + '</td>' +
+      '<td style="font-size:12px;">' + (e.lastSeen || '-') + '</td>' +
+      '</tr>';
+  });
 }
 
 function filterEmailTable() { renderEmailTable(); }
@@ -1499,9 +1338,6 @@ function sortEmailTable(field) {
   renderEmailTable();
 }
 
-// =========================================
-// CHARTS
-// =========================================
 function groupBy(records, keyFn) {
   var map = {};
   for (var i = 0; i < records.length; i++) {
@@ -1530,69 +1366,91 @@ function renderChartsFromRecords(records) {
 }
 
 function renderCharts() {
-  var records = dashboardData ? (dashboardData.potentialFraudRecords || []) : [];
+  var records = dashboardData.potentialFraudRecords || [];
   renderChartsFromRecords(records);
 }
 
 function createDoughnutChart(canvasId, data, drillField) {
-  return new Chart(document.getElementById(canvasId), {
+  var ctx = document.getElementById(canvasId);
+  return new Chart(ctx, {
     type: 'doughnut',
     data: {
       labels: data.slice(0, 8).map(function(g) { return g.name; }),
       datasets: [{ data: data.slice(0, 8).map(function(g) { return g.total; }),
-        backgroundColor: ['#FF5900','#411517','#CFFF00','#F59E0B','#EF4444','#8B5CF6','#06B6D4','#EC4899'], borderWidth: 0 }]
+        backgroundColor: ['#FF5900','#411517','#CFFF00','#F59E0B','#EF4444','#8B5CF6','#06B6D4','#EC4899'],
+        borderWidth: 0 }],
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { position: 'right', labels: { font: { family: 'Inter', size: 11 } } } },
-      onClick: function(evt, items) { if (items.length > 0) applyDrillDown(drillField, data[items[0].index].name); }
-    }
+      onClick: function(evt, items) {
+        if (items.length > 0) {
+          var idx = items[0].index;
+          applyDrillDown(drillField, data[idx].name);
+        }
+      }
+    },
   });
 }
 
 function createBarChart(canvasId, data, drillField) {
-  return new Chart(document.getElementById(canvasId), {
+  var ctx = document.getElementById(canvasId);
+  return new Chart(ctx, {
     type: 'bar',
     data: {
       labels: data.slice(0, 15).map(function(d) { return d.name; }),
       datasets: [{ label: 'Fraud Amount (AED)', data: data.slice(0, 15).map(function(d) { return d.total; }),
-        backgroundColor: '#FF590033', borderColor: '#FF5900', borderWidth: 2, borderRadius: 6 }]
+        backgroundColor: '#FF590033', borderColor: '#FF5900', borderWidth: 2, borderRadius: 6 }],
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: { x: { ticks: { font: { family: 'Inter', size: 10 }, maxRotation: 45 } }, y: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } } },
-      onClick: function(evt, items) { if (items.length > 0) applyDrillDown(drillField, data[items[0].index].name); }
-    }
+      scales: { x: { ticks: { font: { family: 'Inter', size: 10 }, maxRotation: 45 } },
+                y: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } } },
+      onClick: function(evt, items) {
+        if (items.length > 0) {
+          var idx = items[0].index;
+          applyDrillDown(drillField, data[idx].name);
+        }
+      }
+    },
   });
 }
 
 function createHBarChart(canvasId, data, drillField) {
-  return new Chart(document.getElementById(canvasId), {
+  var ctx = document.getElementById(canvasId);
+  return new Chart(ctx, {
     type: 'bar',
     data: {
       labels: data.map(function(r) { return r.name.length > 20 ? r.name.substring(0, 20) + '...' : r.name; }),
       datasets: [{ label: 'Fraud Amount (AED)', data: data.map(function(r) { return r.total; }),
-        backgroundColor: '#FF590033', borderColor: '#FF5900', borderWidth: 2, borderRadius: 6 }]
+        backgroundColor: '#FF590033', borderColor: '#FF5900', borderWidth: 2, borderRadius: 6 }],
     },
     options: {
       responsive: true, maintainAspectRatio: false, indexAxis: 'y',
       plugins: { legend: { display: false } },
-      scales: { x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } }, y: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } } },
-      onClick: function(evt, items) { if (items.length > 0) applyDrillDown(drillField, data[items[0].index].name); }
-    }
+      scales: { x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } },
+                y: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } } },
+      onClick: function(evt, items) {
+        if (items.length > 0) {
+          var idx = items[0].index;
+          applyDrillDown(drillField, data[idx].name);
+        }
+      }
+    },
   });
 }
 
 function createComboChart(canvasId, data, drillField) {
-  return new Chart(document.getElementById(canvasId), {
+  var ctx = document.getElementById(canvasId);
+  return new Chart(ctx, {
     type: 'bar',
     data: {
       labels: data.map(function(b) { return b.name.length > 30 ? b.name.substring(0, 30) + '...' : b.name; }),
       datasets: [
         { label: 'Count', data: data.map(function(b) { return b.count; }), backgroundColor: '#FF5900', borderRadius: 4, yAxisID: 'y' },
-        { label: 'Total (AED)', data: data.map(function(b) { return b.total; }), backgroundColor: '#CFFF0066', borderColor: '#9AB700', borderWidth: 2, borderRadius: 4, yAxisID: 'y1', type: 'line' }
-      ]
+        { label: 'Total (AED)', data: data.map(function(b) { return b.total; }), backgroundColor: '#CFFF0066', borderColor: '#9AB700', borderWidth: 2, borderRadius: 4, yAxisID: 'y1', type: 'line' },
+      ],
     },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -1600,15 +1458,19 @@ function createComboChart(canvasId, data, drillField) {
       scales: {
         x: { ticks: { font: { family: 'Inter', size: 10 }, maxRotation: 45 } },
         y: { position: 'left', title: { display: true, text: 'Count' } },
-        y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'AED' } }
+        y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'AED' } },
       },
-      onClick: function(evt, items) { if (items.length > 0) applyDrillDown(drillField, data[items[0].index].name); }
-    }
+      onClick: function(evt, items) {
+        if (items.length > 0) {
+          var idx = items[0].index;
+          applyDrillDown(drillField, data[idx].name);
+        }
+      }
+    },
   });
 }
 
 function renderEmailChart() {
-  if (!dashboardData) return;
   var emailData = dashboardData.checkoutEmailTop20 || [];
   if (charts.emails) charts.emails.destroy();
   charts.emails = new Chart(document.getElementById('chartEmails'), {
@@ -1618,58 +1480,377 @@ function renderEmailChart() {
       datasets: [{ label: 'Order Count', data: emailData.map(function(e) { return e.count; }),
         backgroundColor: emailData.map(function(e) { return e.maxBurst > 3 ? '#EF444488' : '#FF590088'; }),
         borderColor: emailData.map(function(e) { return e.maxBurst > 3 ? '#EF4444' : '#FF5900'; }),
-        borderWidth: 2, borderRadius: 4 }]
+        borderWidth: 2, borderRadius: 4 }],
     },
     options: { responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: { x: { ticks: { font: { family: 'Inter', size: 9 }, maxRotation: 60 } }, y: { title: { display: true, text: 'Orders' } } } }
+      scales: { x: { ticks: { font: { family: 'Inter', size: 9 }, maxRotation: 60 } },
+                y: { title: { display: true, text: 'Orders' } } } },
   });
 }
 
-// =========================================
-// EXPORT & SHARING
-// =========================================
+/* ============================================================
+   UPLOAD (client-side file storage)
+   ============================================================ */
+function selectFolder(el) {
+  document.querySelectorAll('.folder-tab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+  currentFolder = el.dataset.folder;
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.target.closest('.upload-zone').classList.remove('dragover');
+  uploadFiles(e.dataTransfer.files);
+}
+
+async function uploadFilesToFolder(folder, files) {
+  if (!files.length) return;
+  var folderName = folderKeyMap[folder];
+  if (!folderName) { toast('Invalid folder', 'error'); return; }
+  var settings = loadSettings();
+  var count = 0;
+  for (var i = 0; i < files.length; i++) {
+    var f = files[i];
+    var arrayBuf = await f.arrayBuffer();
+    uploadedFiles[folderName].push({
+      name: f.name,
+      size: f.size,
+      data: new Uint8Array(arrayBuf),
+      dateUploaded: new Date().toISOString(),
+      dateModified: new Date(f.lastModified).toISOString(),
+      uploaderName: settings.uploaderName || 'Unknown'
+    });
+    count++;
+  }
+  toast(count + ' file(s) uploaded to ' + folderName, 'success');
+  loadFileList();
+}
+
+async function uploadFiles(files) {
+  if (!files.length) return;
+  var prog = document.getElementById('uploadProgress');
+  prog.style.display = 'block';
+  document.getElementById('uploadFill').style.width = '30%';
+  document.getElementById('uploadStatus').textContent = 'Uploading ' + files.length + ' file(s) to ' + (folderKeyMap[currentFolder] || currentFolder) + '...';
+  var settings = loadSettings();
+  var folderName = folderKeyMap[currentFolder];
+  if (!folderName) { toast('Select a folder first', 'error'); prog.style.display = 'none'; return; }
+  var count = 0;
+  for (var i = 0; i < files.length; i++) {
+    var f = files[i];
+    var arrayBuf = await f.arrayBuffer();
+    uploadedFiles[folderName].push({
+      name: f.name,
+      size: f.size,
+      data: new Uint8Array(arrayBuf),
+      dateUploaded: new Date().toISOString(),
+      dateModified: new Date(f.lastModified).toISOString(),
+      uploaderName: settings.uploaderName || 'Unknown'
+    });
+    count++;
+  }
+  document.getElementById('uploadFill').style.width = '100%';
+  var msg = count + ' file(s) uploaded to ' + folderName;
+  document.getElementById('uploadStatus').textContent = msg;
+  toast(msg, 'success');
+  loadFileList();
+  setTimeout(function() { prog.style.display = 'none'; }, 3000);
+}
+
+function fmtDateShort(isoStr) {
+  if (!isoStr) return '-';
+  var d = new Date(isoStr);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return String(d.getDate()).padStart(2,'0') + '-' + months[d.getMonth()] + '-' + d.getFullYear();
+}
+
+function loadFileList() {
+  var container = document.getElementById('fileListContainer');
+  var html = '<p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Source: Browser (local uploads)</p>';
+  var folders = ['Detailed Reports', 'Checkout', 'AX365', 'Branch Inquiry'];
+  for (var fi = 0; fi < folders.length; fi++) {
+    var folder = folders[fi];
+    var files = uploadedFiles[folder] || [];
+    html += '<h4 style="margin:12px 0 6px;font-size:13px;color:var(--primary);">&#x1F4C1; ' + folder + '</h4>';
+    if (files.length === 0) { html += '<p style="font-size:12px;color:var(--text-muted);margin-left:20px;">No files</p>'; continue; }
+    html += '<ul class="file-list">';
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var size = f.size > 1048576 ? (f.size / 1048576).toFixed(1) + ' MB' : (f.size / 1024).toFixed(0) + ' KB';
+      html += '<li class="file-item">' +
+        '<span class="name">&#x1F4C4; ' + f.name + '</span>' +
+        '<span class="meta">' + size + ' | Uploaded: ' + fmtDateShort(f.dateUploaded) + ' | Modified: ' + fmtDateShort(f.dateModified) + ' | By: ' + (f.uploaderName || '-') + '</span>' +
+        '</li>';
+    }
+    html += '</ul>';
+  }
+  container.innerHTML = html;
+}
+
+/* ============================================================
+   RUN ANALYSIS (client-side)
+   ============================================================ */
+async function runAnalysis() {
+  var btn = document.getElementById('btnRun');
+  btn.disabled = true;
+  btn.innerHTML = '&#x23F3; Running...';
+  var prog = document.getElementById('runProgress');
+  prog.style.display = 'block';
+  document.getElementById('runFill').style.width = '10%';
+  var logEl = document.getElementById('runLog');
+  logEl.innerHTML = '<div class="log-line">Starting fraud analysis...</div>';
+
+  await new Promise(function(r) { setTimeout(r, 50); });
+
+  try {
+    var t0 = performance.now();
+    var fileErrors = [];
+
+    engineLog('=== TALABAT FRAUD HUNTER ===');
+    engineLog('Processing uploaded files in browser...');
+    document.getElementById('runFill').style.width = '15%';
+
+    engineLog('[1/7] Reading Detailed Reports...');
+    var records, totalDetailedRows;
+    try {
+      var result = readDetailedReportsFromMemory();
+      records = result.records;
+      totalDetailedRows = result.totalDetailedRows;
+    } catch (err) {
+      fileErrors.push({ step: 'Detailed Reports', error: err.message, fix: 'Ensure at least one .xlsx file exists in the Detailed Reports folder with transaction data starting at row 4.' });
+      throw new Error('Detailed Reports failed: ' + err.message);
+    }
+    document.getElementById('runFill').style.width = '30%';
+    await new Promise(function(r) { setTimeout(r, 50); });
+
+    engineLog('[2/7] Reading Branch Inquiry...');
+    var branchInq = {};
+    try {
+      branchInq = readBranchInquiryFromMemory();
+    } catch (err) {
+      fileErrors.push({ step: 'Branch Inquiry', error: err.message, fix: 'Check the .xlsx file in Branch Inquiry folder.' });
+      engineLog('  WARNING: Branch Inquiry failed (' + err.message + '), continuing without it.');
+    }
+    document.getElementById('runFill').style.width = '40%';
+
+    engineLog('[3/7] Reading AX365...');
+    var ax365 = {};
+    try {
+      ax365 = readAX365FromMemory();
+    } catch (err) {
+      fileErrors.push({ step: 'AX365', error: err.message, fix: 'Check the .xlsx file in AX365 folder.' });
+      engineLog('  WARNING: AX365 failed (' + err.message + '), continuing without it.');
+    }
+    document.getElementById('runFill').style.width = '50%';
+    await new Promise(function(r) { setTimeout(r, 50); });
+
+    engineLog('[4/7] Reading Checkout (matching orders)...');
+    var orderIds = records.map(function(r) { return r['Order Id']; });
+    var checkout = {};
+    try {
+      checkout = readCheckoutForOrdersFromMemory(orderIds);
+    } catch (err) {
+      fileErrors.push({ step: 'Checkout (order matching)', error: err.message, fix: 'Ensure .csv files in Checkout folder have headers: Reference, Action Type, Response Description, Customer Email, Amount.' });
+      engineLog('  WARNING: Checkout order matching failed (' + err.message + '), continuing without it.');
+    }
+    document.getElementById('runFill').style.width = '60%';
+    await new Promise(function(r) { setTimeout(r, 50); });
+
+    engineLog('[5/7] Merging and applying fraud rules...');
+    mergeData(records, branchInq, ax365, checkout);
+    applyFraudRules(records);
+    var potentialFraud = applyPotentialFraudFilter(records);
+    latestAllRecords = records;
+    document.getElementById('runFill').style.width = '70%';
+
+    engineLog('[6/7] Scanning checkout emails for Dashboard 2...');
+    var allCheckoutEmails = [];
+    try {
+      allCheckoutEmails = readCheckoutEmailStatsFromMemory();
+    } catch (err) {
+      fileErrors.push({ step: 'Checkout (email stats)', error: err.message, fix: 'Ensure .csv files in Checkout folder have headers: Customer Email, Action Date UTC, Action Type, Amount.' });
+      engineLog('  WARNING: Checkout email stats failed (' + err.message + '), continuing without it.');
+    }
+    var checkoutEmailTop20 = allCheckoutEmails.slice(0, 20);
+    document.getElementById('runFill').style.width = '85%';
+
+    engineLog('[7/7] Building dashboard data...');
+
+    if (fileErrors.length > 0) {
+      engineLog('');
+      engineLog('--- WARNINGS: Some data sources had errors ---');
+      fileErrors.forEach(function(e) { engineLog('  [' + e.step + '] ' + e.error); engineLog('    Fix: ' + e.fix); });
+      engineLog('--- Analysis continued with available data ---');
+    }
+
+    potentialFraud.sort(function(a, b) {
+      var diff = (b['Total Sale'] || 0) - (a['Total Sale'] || 0);
+      if (diff !== 0) return diff;
+      var ridCmp = (a['Restaurant Id'] || '').localeCompare(b['Restaurant Id'] || '');
+      if (ridCmp !== 0) return ridCmp;
+      return (a['Customer Email'] || '').localeCompare(b['Customer Email'] || '');
+    });
+
+    var potentialFraudTotal = potentialFraud.reduce(function(s, r) { return s + (r['Total Sale'] || 0); }, 0);
+    var fraudPct = totalDetailedRows > 0 ? ((potentialFraud.length / totalDetailedRows) * 100).toFixed(2) : '0.00';
+
+    var groupByField2 = function(arr, field) {
+      var map = {};
+      for (var i = 0; i < arr.length; i++) { var r = arr[i]; var k = r[field] || '(blank)'; if (!map[k]) map[k] = { count: 0, total: 0 }; map[k].count++; map[k].total += r['Total Sale'] || 0; }
+      return Object.entries(map).sort(function(a, b) { return b[1].total - a[1].total; }).map(function(e) { return { name: e[0], count: e[1].count, total: Math.round(e[1].total * 100) / 100 }; });
+    };
+
+    var groupByComposite = function(arr, fields) {
+      var map = {};
+      for (var i = 0; i < arr.length; i++) {
+        var r = arr[i];
+        var key = fields.map(function(f) { return r[f] || ''; }).join('||');
+        if (!map[key]) { map[key] = { count: 0, total: 0, fields: {} }; fields.forEach(function(f) { map[key].fields[f] = r[f] || ''; }); }
+        map[key].count++; map[key].total += r['Total Sale'] || 0;
+      }
+      return Object.values(map).sort(function(a, b) { return b.total - a.total; }).map(function(v) {
+        var obj = Object.assign({}, v.fields); obj.count = v.count; obj.total = Math.round(v.total * 100) / 100; return obj;
+      });
+    };
+
+    dashboardData = {
+      summary: {
+        totalDetailedRows: totalDetailedRows,
+        potentialFraudCount: potentialFraud.length,
+        potentialFraudValue: potentialFraudTotal,
+        potentialFraudPct: fraudPct,
+      },
+      potentialFraudRecords: potentialFraud.map(function(r, i) {
+        return {
+          serial: i + 1, restaurantId: r['Restaurant Id'], branchId: r['Branch Id'],
+          restaurant: r['Restaurant'], branch: r['Branch'], orderId: r['Order Id'],
+          dateTime: r['Date / Time'],
+          paymentMethod: r['Payment Method'] || '', status: r['Status'] || '', serviceType: r['Service Type'] || '',
+          subTotal: r['SubTotal'], totalSale: r['Total Sale'],
+          netPayment: r['Net Payment Per Order'],
+          customerGroup: r['Customer group'], customerAccount: r['Customer account'],
+          customerEmail: r['Customer Email'],
+          reasons: r['Potential Fraud Reasons'],
+        };
+      }),
+      byCustomerGroup: groupByField2(potentialFraud, 'Customer group'),
+      byDate: (function() {
+        var map = {};
+        for (var i = 0; i < potentialFraud.length; i++) { var r = potentialFraud[i]; var k = dateOnlyDDMMMYYYY(r['Date / Time']); if (!map[k]) map[k] = { count: 0, total: 0 }; map[k].count++; map[k].total += r['Total Sale'] || 0; }
+        return Object.entries(map).sort(function(a, b) { return a[0].localeCompare(b[0]); }).map(function(e) { return { name: e[0], count: e[1].count, total: Math.round(e[1].total * 100) / 100 }; });
+      })(),
+      byRestaurantAccount: groupByComposite(potentialFraud, ['Restaurant Id', 'Customer account', 'Restaurant']),
+      byBranchId: groupByComposite(potentialFraud, ['Branch Id', 'Branch']),
+      checkoutEmailTop20: checkoutEmailTop20,
+      fileErrors: fileErrors.length > 0 ? fileErrors : null,
+      generatedAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem('fraudHunterResults', JSON.stringify(dashboardData));
+    document.getElementById('runFill').style.width = '100%';
+
+    var elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+    engineLog('');
+    engineLog('Done in ' + elapsed + 's | ' + totalDetailedRows + ' total orders | ' + potentialFraud.length + ' potential fraud | ' + checkoutEmailTop20.length + ' suspicious emails');
+    logEl.innerHTML += '<div class="log-line" style="color:#CFFF00;">&#x2705; Analysis complete!</div>';
+
+    if (fileErrors.length > 0) {
+      toast('Analysis complete with ' + fileErrors.length + ' warning(s). Check the log.', 'info');
+    } else {
+      toast('Analysis complete! View the dashboard for results.', 'success');
+    }
+
+    renderDashboard();
+    document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date(dashboardData.generatedAt).toLocaleString();
+    checkCelebration();
+
+  } catch (e) {
+    logEl.innerHTML += '<div class="log-line" style="color:#EF4444;">&#x274C; Error: ' + e.message + '</div>';
+    toast('Analysis failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#x1F680; Run Analysis';
+  }
+}
+
+/* ============================================================
+   DOWNLOAD EXCEL (client-side with SheetJS)
+   ============================================================ */
 function downloadExcel() {
-  if (!dashboardData) { toast('No analysis data. Run analysis first.', 'error'); return; }
+  if (!dashboardData) { toast('No analysis results. Run analysis first.', 'error'); return; }
+
   var wb = XLSX.utils.book_new();
 
-  var fraudHeaders = ['#', 'Restaurant Id', 'Branch Id', 'Restaurant', 'Branch', 'Order Id',
-    'Date / Time', 'Payment Method', 'Status', 'Service Type', 'SubTotal', 'Total Sale',
-    'Net Payment', 'Customer Group', 'Customer Account', 'Customer Email', 'Potential Fraud Reasons'];
-  var fraudRows = dashboardData.potentialFraudRecords.map(function(r, i) {
-    return [i + 1, r.restaurantId, r.branchId, r.restaurant, r.branch, r.orderId,
-      r.dateTime, r.paymentMethod, r.status, r.serviceType, r.subTotal, r.totalSale,
-      r.netPayment, r.customerGroup, r.customerAccount, r.customerEmail, r.reasons];
-  });
-  var ws1 = XLSX.utils.aoa_to_sheet([fraudHeaders].concat(fraudRows));
-  ws1['!cols'] = fraudHeaders.map(function(h) { return { wch: h === 'Potential Fraud Reasons' ? 60 : h === 'Customer Email' ? 30 : 18 }; });
-  XLSX.utils.book_append_sheet(wb, ws1, 'Potential Fraud');
+  if (latestAllRecords) {
+    var mainCols = [
+      'Restaurant Id', 'Branch Id', 'Restaurant', 'Branch', 'Order Id',
+      'Date / Time', 'Payment Method', 'Status', 'Service Type',
+      'SubTotal', 'Total Sale', 'Net Payment Per Order',
+      'Customer group', 'Customer account', 'Branch AX Code', 'MSD Checker',
+      'Action Type', 'Response Description', 'Customer Email', 'Checkout Amount',
+      'Potential Fraud', 'Fraud Reasons',
+    ];
+    var mainData = [mainCols];
+    latestAllRecords.forEach(function(rec) {
+      mainData.push(mainCols.map(function(c) { return rec[c] !== undefined ? rec[c] : ''; }));
+    });
+    var ws1 = XLSX.utils.aoa_to_sheet(mainData);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Main Data');
+  }
 
-  var emailHeaders = ['Rank', 'Customer Email', 'Order Count', 'Total Amount (AED)', 'Max Burst', 'First Seen', 'Last Seen'];
-  var emailRows = (dashboardData.checkoutEmailTop20 || []).map(function(e, i) {
-    return [i + 1, e.email, e.count, e.totalAmount, e.maxBurst, e.firstSeen, e.lastSeen];
+  var fraudCols = ['Serial','Restaurant Id','Branch Id','Restaurant','Branch','Order Id',
+    'Date / Time','Payment Method','Status','Service Type','SubTotal','Total Sale',
+    'Net Payment Per Order','Customer Group','Customer Account','Customer Email','Potential Fraud Reasons'];
+  var fraudData = [fraudCols];
+  (dashboardData.potentialFraudRecords || []).forEach(function(r, i) {
+    fraudData.push([i+1, r.restaurantId, r.branchId, r.restaurant, r.branch, r.orderId,
+      stripTime(r.dateTime), r.paymentMethod, r.status, r.serviceType,
+      r.subTotal, r.totalSale, r.netPayment, r.customerGroup, r.customerAccount,
+      r.customerEmail, r.reasons]);
   });
-  var ws2 = XLSX.utils.aoa_to_sheet([emailHeaders].concat(emailRows));
-  ws2['!cols'] = emailHeaders.map(function(h) { return { wch: h === 'Customer Email' ? 40 : 18 }; });
-  XLSX.utils.book_append_sheet(wb, ws2, 'Suspicious Emails');
+  var ws2 = XLSX.utils.aoa_to_sheet(fraudData);
+  XLSX.utils.book_append_sheet(wb, ws2, 'Potential Fraud');
 
-  var summaryData = [
+  var s = dashboardData.summary;
+  var d1Data = [
     ['FRAUD ANALYSIS DASHBOARD'], [],
-    ['Metric', 'Value'],
-    ['Total Orders (Detailed Report)', dashboardData.summary.totalDetailedRows],
-    ['Potential Fraud Count', dashboardData.summary.potentialFraudCount],
-    ['Potential Fraud %', dashboardData.summary.potentialFraudPct + '%'],
-    ['Potential Fraud Amount (AED)', dashboardData.summary.potentialFraudValue],
-    [], ['Generated', dashboardData.generatedAt]
+    ['SUMMARY'], ['Metric', 'Value'],
+    ['Total Orders (Detailed Report)', s.totalDetailedRows],
+    ['Potential Fraud Count', s.potentialFraudCount],
+    ['Potential Fraud %', s.potentialFraudPct + '%'],
+    ['Potential Fraud Amount (AED)', s.potentialFraudValue],
+    [], [],
+    ['BREAKDOWN BY CUSTOMER GROUP'], ['Customer Group', 'Count', '%', 'Total Amount (AED)'],
   ];
-  var ws3 = XLSX.utils.aoa_to_sheet(summaryData);
-  ws3['!cols'] = [{ wch: 35 }, { wch: 25 }];
-  XLSX.utils.book_append_sheet(wb, ws3, 'Summary');
+  var pCount = s.potentialFraudCount || 1;
+  (dashboardData.byCustomerGroup || []).forEach(function(g) {
+    d1Data.push([g.name, g.count, ((g.count / pCount) * 100).toFixed(1) + '%', g.total]);
+  });
+  d1Data.push([], [], ['BREAKDOWN BY DATE'], ['Date', 'Count', '%', 'Total Amount (AED)']);
+  (dashboardData.byDate || []).forEach(function(g) {
+    d1Data.push([g.name, g.count, ((g.count / pCount) * 100).toFixed(1) + '%', g.total]);
+  });
+  var ws3 = XLSX.utils.aoa_to_sheet(d1Data);
+  XLSX.utils.book_append_sheet(wb, ws3, 'Dashboard 1');
+
+  var d2Data = [
+    ['TOP 20 SUSPICIOUS EMAILS FROM CHECKOUT DATA'], [],
+    ['Rank', 'Customer Email', 'Order Count', 'Total Amount (AED)', 'Max Consecutive Burst', 'First Seen', 'Last Seen'],
+  ];
+  (dashboardData.checkoutEmailTop20 || []).forEach(function(e, i) {
+    d2Data.push([i+1, e.email, e.count, e.totalAmount, e.maxBurst, e.firstSeen, e.lastSeen]);
+  });
+  var ws4 = XLSX.utils.aoa_to_sheet(d2Data);
+  XLSX.utils.book_append_sheet(wb, ws4, 'Dashboard 2');
 
   XLSX.writeFile(wb, 'Fraud_Analysis_Output.xlsx');
   toast('Excel downloaded!', 'success');
 }
 
+/* ============================================================
+   PDF DOWNLOAD (same as original)
+   ============================================================ */
 function downloadPDF() {
   var activePage = document.querySelector('.page.active');
   if (!activePage) return;
@@ -1677,146 +1858,160 @@ function downloadPDF() {
   var tabName = activeNav ? activeNav.textContent.trim() : 'Report';
   var safeName = tabName.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
   toast('Generating PDF for "' + tabName + '"...', 'info');
-  html2pdf().set({
-    margin: 10, filename: 'Fraud_Analysis_' + safeName + '.pdf',
+  var opt = {
+    margin: 10,
+    filename: 'Fraud_Analysis_' + safeName + '.pdf',
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
-    jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' }
-  }).from(activePage).save().then(function() { toast('PDF downloaded!', 'success'); });
-}
-
-function copyForSlack() {
-  if (!dashboardData) { toast('No analysis data. Run analysis first.', 'error'); return; }
-  var s = dashboardData.summary;
-  var text = '=== FRAUD ANALYSIS REPORT ===\n';
-  text += 'Total Orders: ' + Number(s.totalDetailedRows).toLocaleString() + '\n';
-  text += 'Potential Fraud: ' + s.potentialFraudCount + '\n';
-  text += 'Fraud Amount: AED ' + Number(s.potentialFraudValue).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '\n';
-  text += 'Fraud %: ' + s.potentialFraudPct + '%\n\n';
-  if (dashboardData.checkoutEmailTop20 && dashboardData.checkoutEmailTop20.length) {
-    text += 'Top 5 Suspicious Emails:\n';
-    dashboardData.checkoutEmailTop20.slice(0, 5).forEach(function(e, i) {
-      text += (i + 1) + '. ' + e.email + ' (' + e.count + ' orders, AED ' + e.totalAmount + ')\n';
-    });
-  }
-  navigator.clipboard.writeText(text).then(function() {
-    toast('Report copied to clipboard! Paste in Slack.', 'success');
-  }).catch(function() { toast('Copy failed. Try again.', 'error'); });
-}
-
-function sendEmail() {
-  var to = document.getElementById('emailTo').value;
-  var cc = document.getElementById('emailCc').value;
-  var subject = document.getElementById('emailSubject').value || 'Fraud Alert - Suspicious Customer Emails';
-  var body = document.getElementById('emailBody').value;
-  if (!to) { toast('TO field is required', 'error'); return; }
-  if (dashboardData && dashboardData.checkoutEmailTop20) {
-    body += '\n\nTop 20 Suspicious Customer Emails:\n';
-    body += '================================\n';
-    dashboardData.checkoutEmailTop20.forEach(function(e, i) {
-      body += (i + 1) + '. ' + e.email + ' (' + e.count + ' orders, AED ' + e.totalAmount + ')\n';
-    });
-  }
-  var mailtoUrl = 'mailto:' + encodeURIComponent(to);
-  var params = [];
-  if (cc) params.push('cc=' + encodeURIComponent(cc));
-  params.push('subject=' + encodeURIComponent(subject));
-  params.push('body=' + encodeURIComponent(body));
-  mailtoUrl += '?' + params.join('&');
-  window.open(mailtoUrl);
-  toast('Email client opened!', 'success');
-}
-
-function exportJSON() {
-  if (!dashboardData) { toast('No data to export', 'error'); return; }
-  var blob = new Blob([JSON.stringify(dashboardData, null, 2)], { type: 'application/json' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url; a.download = 'fraud_analysis_results.json'; a.click();
-  URL.revokeObjectURL(url);
-  toast('JSON exported!', 'success');
-}
-
-function importJSON(fileList) {
-  if (!fileList || !fileList.length) return;
-  readFileAsText(fileList[0]).then(function(text) {
-    try {
-      dashboardData = JSON.parse(text);
-      try { localStorage.setItem('fraudHunterResults', text); } catch (e) {}
-      renderDashboard();
-      document.getElementById('lastUpdated').textContent = dashboardData.generatedAt
-        ? 'Updated: ' + new Date(dashboardData.generatedAt).toLocaleString() : '';
-      toast('Results imported!', 'success');
-      checkCelebration();
-    } catch (e) { toast('Invalid JSON file', 'error'); }
+    jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' },
+  };
+  html2pdf().set(opt).from(activePage).save().then(function() {
+    toast('PDF downloaded!', 'success');
   });
 }
 
-function clearCachedData() {
-  if (!confirm('Clear all cached analysis results?')) return;
-  localStorage.removeItem('fraudHunterResults');
-  dashboardData = null;
-  document.getElementById('statDetailedTotal').textContent = '--';
-  document.getElementById('statPotentialFraud').textContent = '--';
-  document.getElementById('statFraudValue').textContent = '--';
-  document.getElementById('statFraudPct').textContent = '--';
-  document.getElementById('fraudTableBody').innerHTML = '';
-  document.getElementById('emailTableBody').innerHTML = '';
-  Object.values(charts).forEach(function(c) { c.destroy(); });
-  charts = {};
-  document.getElementById('lastUpdated').textContent = '';
-  toast('Cache cleared', 'success');
+/* ============================================================
+   GOOGLE SHEETS EXPORT
+   ============================================================ */
+function exportGoogleSheets() {
+  toast('Opening Google Drive folder...', 'info');
+  window.open('https://drive.google.com/drive/folders/1-oMUrBczTD1tv5mSyRFe00_pTlDjg1yH', '_blank');
+  toast('Download the Excel file and upload it to the Google Drive Output folder.', 'info');
 }
 
-// =========================================
-// SETTINGS
-// =========================================
+/* ============================================================
+   SLACK (client-side)
+   ============================================================ */
+function openSlackModal() {
+  var settings = loadSettings();
+  document.getElementById('slackModalChannel').value = settings.slackChannel || 'C085XTZTC05';
+  document.getElementById('slackModal').classList.add('show');
+}
+function closeSlackModal() { document.getElementById('slackModal').classList.remove('show'); }
+
+async function shareToSlack() {
+  var settings = loadSettings();
+  var channelId = document.getElementById('slackModalChannel').value;
+  var message = document.getElementById('slackModalMessage').value;
+  if (!settings.slackToken) { toast('Set your Slack Bot Token in Settings first.', 'error'); return; }
+
+  var btn = document.querySelector('#slackModal .btn-slack');
+  await asyncBtn(btn, async function() {
+    try {
+      var res = await fetch('https://slack.com/api/chat.postMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.slackToken },
+        body: JSON.stringify({ channel: channelId, text: message || 'Fraud Analysis Report - please review.' }),
+      });
+      var data = await res.json();
+      if (data.ok) {
+        toast('Shared to Slack!', 'success');
+        setTimeout(function() { closeSlackModal(); }, 1500);
+      } else {
+        throw new Error(data.error || 'Slack API error');
+      }
+    } catch (e) {
+      var fullMsg = (message || 'Fraud Analysis Report') + '\nChannel: ' + channelId;
+      await navigator.clipboard.writeText(fullMsg);
+      toast('Message copied to clipboard. Paste in Slack manually. (' + e.message + ')', 'info');
+      setTimeout(function() { closeSlackModal(); }, 1500);
+    }
+  });
+}
+
+/* ============================================================
+   EMAIL (client-side via mailto)
+   ============================================================ */
+async function sendEmail() {
+  var settings = loadSettings();
+  var from = document.getElementById('emailFrom').value;
+  var to = document.getElementById('emailTo').value;
+  var cc = document.getElementById('emailCc').value;
+  var subject = document.getElementById('emailSubject').value || 'Fraud Analysis - Top 20 Suspicious Emails';
+  var body = document.getElementById('emailBody').value;
+
+  if (!to) { toast('TO field is required', 'error'); return; }
+
+  var emailBody = body || '';
+  if (dashboardData && dashboardData.checkoutEmailTop20) {
+    emailBody += '\n\nTop 20 Suspicious Customer Emails:\n';
+    dashboardData.checkoutEmailTop20.forEach(function(e, i) {
+      emailBody += (i + 1) + '. ' + e.email + '\n';
+    });
+  }
+
+  var btn = document.getElementById('btnSendEmail');
+  await asyncBtn(btn, async function() {
+    var mailtoUrl = 'mailto:' + encodeURIComponent(to);
+    var params = [];
+    if (cc) params.push('cc=' + encodeURIComponent(cc));
+    params.push('subject=' + encodeURIComponent(subject));
+    params.push('body=' + encodeURIComponent(emailBody));
+    if (params.length) mailtoUrl += '?' + params.join('&');
+    window.open(mailtoUrl, '_blank');
+    toast('Email client opened!', 'success');
+  });
+}
+
+/* ============================================================
+   SETTINGS (same localStorage approach as original)
+   ============================================================ */
 function loadSettings() {
   try { return JSON.parse(localStorage.getItem('fraudHunterSettings') || '{}'); }
-  catch (e) { return {}; }
+  catch(e) { return {}; }
 }
-
 function saveSettings() {
   var settings = {
     uploaderName: document.getElementById('uploaderName').value,
-    userRole: document.getElementById('userRole').value
+    userRole: document.getElementById('userRole').value,
+    slackToken: document.getElementById('slackToken').value,
+    slackChannel: document.getElementById('slackChannel').value,
+    smtpHost: document.getElementById('smtpHost').value,
+    smtpPort: document.getElementById('smtpPort').value,
+    smtpUser: document.getElementById('smtpUser').value,
+    smtpPass: document.getElementById('smtpPass').value,
   };
   localStorage.setItem('fraudHunterSettings', JSON.stringify(settings));
+  setRole(settings.userRole || 'owner');
   toast('Settings saved!', 'success');
 }
-
 function restoreSettings() {
   var s = loadSettings();
   if (s.uploaderName) document.getElementById('uploaderName').value = s.uploaderName;
-  if (s.userRole) document.getElementById('userRole').value = s.userRole;
+  if (s.userRole) { document.getElementById('userRole').value = s.userRole; setRole(s.userRole); }
+  if (s.slackToken) document.getElementById('slackToken').value = s.slackToken;
+  if (s.slackChannel) document.getElementById('slackChannel').value = s.slackChannel;
+  if (s.smtpHost) document.getElementById('smtpHost').value = s.smtpHost;
+  if (s.smtpPort) document.getElementById('smtpPort').value = s.smtpPort;
+  if (s.smtpUser) document.getElementById('smtpUser').value = s.smtpUser;
+  if (s.smtpPass) document.getElementById('smtpPass').value = s.smtpPass;
+}
+
+function setRole(role) {
+  currentRole = role || 'owner';
+  applyRBAC();
+}
+
+function generatePublicLink() {
+  var url = window.location.href;
+  document.getElementById('publicLink').value = url;
+  toast('Public link generated! Share this file or its URL.', 'success');
 }
 
 function copyPublicLink() {
   var link = document.getElementById('publicLink').value;
-  if (!link) { toast('No URL to copy', 'error'); return; }
-  navigator.clipboard.writeText(link).then(function() {
-    toast('URL copied to clipboard!', 'success');
-  });
+  if (!link) { toast('Generate a link first', 'error'); return; }
+  navigator.clipboard.writeText(link);
+  toast('Link copied to clipboard!', 'success');
 }
 
-// =========================================
-// INITIALIZATION
-// =========================================
+/* ============================================================
+   INIT
+   ============================================================ */
 window.addEventListener('DOMContentLoaded', function() {
   restoreSettings();
-  document.getElementById('publicLink').value = window.location.href;
-  renderFileList();
-
-  try {
-    var cached = localStorage.getItem('fraudHunterResults');
-    if (cached) {
-      dashboardData = JSON.parse(cached);
-      renderDashboard();
-      document.getElementById('lastUpdated').textContent = dashboardData.generatedAt
-        ? 'Updated: ' + new Date(dashboardData.generatedAt).toLocaleString() : '';
-      checkCelebration();
-    }
-  } catch (e) {}
+  loadResults();
+  loadFileList();
 });
 </script>
 </body>
