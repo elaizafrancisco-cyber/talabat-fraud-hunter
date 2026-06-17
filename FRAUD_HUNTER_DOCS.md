@@ -114,6 +114,30 @@ All connections use **SSE (Server-Sent Events)** transport.
 
 ## Installation & Setup
 
+### Cloud Deployment (Render.com — Free Tier)
+
+**Permanent URL:** `https://talabat-fraud-hunter.onrender.com`
+
+**GitHub Repository:** `https://github.com/elaizafrancisco-cyber/talabat-fraud-hunter`
+
+The application is deployed on Render.com free tier with auto-HTTPS. It auto-deploys from the GitHub `master` branch on every push.
+
+| Property          | Value                                            |
+|-------------------|--------------------------------------------------|
+| Platform          | Render.com (Free Web Service)                    |
+| Runtime           | Node.js 20                                       |
+| Build Command     | `npm install`                                    |
+| Start Command     | `node server.js`                                 |
+| Storage           | Ephemeral (data resets on redeploy/sleep)         |
+| Auto-Sleep        | After 15 min of inactivity (spins up on request) |
+| HTTPS             | Automatic via Render                             |
+
+**Data on Cloud:** Files uploaded via the web UI are stored in ephemeral container storage. Data is not persisted across redeploys or sleep cycles — upload fresh data each session. This is by design to protect company data.
+
+**Re-Deploy:** Push to `master` branch on GitHub. Render auto-detects and redeploys within 2-3 minutes.
+
+### Local Development
+
 ```bash
 # Prerequisites: Node.js v20+
 cd FraudAnalysis
@@ -122,6 +146,7 @@ npm install
 # Start server
 node server.js
 # Dashboard: http://localhost:3000
+# Uses G: Drive paths when available, falls back to ./data/
 ```
 
 **Dependencies:** `express`, `exceljs`, `multer`, `nodemailer`, `@slack/web-api`, `xlsx`, `open`
@@ -414,13 +439,16 @@ Maximum file size: **500 MB per file**
 
 ### Environment
 
-| Setting    | Value                                                                                      |
-|------------|--------------------------------------------------------------------------------------------|
-| Port       | 3000                                                                                       |
-| Node.js    | v20.20.2                                                                                   |
-| Input Dir  | `G:\Shared drives\AR Team (Talabat UAE Finance) - Shared Drive\Claude\Fraud\Input`         |
-| Output Dir | `G:\Shared drives\AR Team (Talabat UAE Finance) - Shared Drive\Claude\Fraud\Output`        |
-| DNS Fix    | `dns.setDefaultResultOrder('ipv4first')` — forces IPv4 routing for SMTP                    |
+| Setting    | Local Value                                                                                | Cloud Value                              |
+|------------|--------------------------------------------------------------------------------------------|------------------------------------------|
+| Port       | 3000                                                                                       | `$PORT` (set by Render)                  |
+| Node.js    | v20.20.2                                                                                   | v20 (Render runtime)                     |
+| Data Root  | `G:\Shared drives\...\Claude\Fraud` (auto-detected)                                        | `/opt/render/project/src/data`           |
+| Input Dir  | `{DATA_ROOT}\Input`                                                                        | `{DATA_ROOT}/Input`                      |
+| Output Dir | `{DATA_ROOT}\Output`                                                                       | `{DATA_ROOT}/Output`                     |
+| DNS Fix    | `dns.setDefaultResultOrder('ipv4first')` — forces IPv4 routing for SMTP                    | Same                                     |
+
+**Path Resolution Logic:** The server checks for G: Drive first. If available (local dev), uses it. Otherwise falls back to `DATA_ROOT` env var or `./data/` directory. This allows the same codebase to run locally and in the cloud.
 
 ---
 
