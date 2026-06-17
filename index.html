@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talabat Fraud Hunter</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #FF5900;
+  --primary-dark: #e04f00;
+  --accent: #411517;
+  --secondary: #F4EDE3;
+  --highlight: #CFFF00;
+  --bg: #FAF8F5;
+  --card-bg: #FFFFFF;
+  --text: #2D2D2D;
+  --text-muted: #7A7A7A;
+  --border: #E8E3DC;
+  --success: #22C55E;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 260px;
+  background: var(--accent); color: white; z-index: 100;
+  display: flex; flex-direction: column; transition: transform 0.3s;
+}
+.sidebar-header { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.logo-area { display: flex; align-items: center; gap: 12px; }
+.talabat-logo { width: 42px; height: 42px; }
+.logo-text { font-weight: 800; font-size: 18px; letter-spacing: -0.5px; }
+.logo-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; font-weight: 400; }
+
+.nav-menu { flex: 1; padding: 16px 12px; overflow-y: auto; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border-radius: 10px; cursor: pointer; transition: all 0.2s;
+  font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); margin-bottom: 4px;
+}
+.nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+.nav-item.active { background: var(--primary); color: white; font-weight: 600; }
+.nav-item .icon { font-size: 18px; width: 24px; text-align: center; }
+.nav-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 12px 8px; }
+
+.main { margin-left: 260px; padding: 0; min-height: 100vh; }
+.topbar {
+  position: sticky; top: 0; z-index: 50; background: rgba(250,248,245,0.9);
+  backdrop-filter: blur(10px); border-bottom: 1px solid var(--border);
+  padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+}
+.topbar-title { font-size: 20px; font-weight: 700; color: var(--accent); }
+.topbar-subtitle { font-size: 12px; color: gray; font-weight: 400; margin-top: 2px; }
+.topbar-actions { display: flex; gap: 10px; align-items: center; }
+.topbar-time { font-size: 12px; color: var(--text-muted); }
+
+.dropdown-wrap { position: relative; display: inline-block; }
+.dropdown-btn { position: relative; }
+.dropdown-menu {
+  display: none; position: absolute; right: 0; top: 100%; margin-top: 6px;
+  background: white; border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 200px; z-index: 60;
+  overflow: hidden;
+}
+.dropdown-menu.show { display: block; }
+.dropdown-item {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+  font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.15s;
+  border: none; background: none; width: 100%; text-align: left; font-family: 'Inter', sans-serif; color: var(--text);
+}
+.dropdown-item:hover { background: var(--secondary); }
+.dropdown-item .dd-icon { font-size: 16px; }
+
+.content { padding: 24px 32px; }
+.page { display: none; }
+.page.active { display: block; }
+
+.card {
+  background: var(--card-bg); border-radius: 16px; padding: 24px;
+  border: 1px solid var(--border); margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.card-title { font-size: 14px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--card-bg); border-radius: 14px; padding: 20px;
+  border: 1px solid var(--border); position: relative; overflow: hidden;
+}
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+.stat-card.orange::before { background: var(--primary); }
+.stat-card.red::before { background: var(--danger); }
+.stat-card.green::before { background: var(--success); }
+.stat-card.lime::before { background: var(--highlight); }
+.stat-icon { font-size: 28px; margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: 800; color: var(--accent); }
+.stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-top: 4px; }
+
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.chart-container { position: relative; height: 300px; }
+
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th {
+  background: var(--primary); color: white; padding: 12px 14px;
+  text-align: left; font-weight: 600; position: sticky; top: 0;
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px;
+  white-space: nowrap; cursor: pointer; user-select: none;
+}
+.data-table th:hover { background: var(--primary-dark); }
+.data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.data-table tr:hover td { background: #FFF8F5; }
+.data-table tr:nth-child(even) td { background: var(--secondary); }
+.data-table tr:nth-child(even):hover td { background: #F0E8DC; }
+.table-wrap { overflow-x: auto; max-height: 600px; overflow-y: auto; border-radius: 12px; border: 1px solid var(--border); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 10px; font-weight: 600;
+  font-size: 14px; cursor: pointer; border: none; transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-accent { background: var(--accent); color: white; }
+.btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+.btn-success { background: var(--success); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+.badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-danger { background: #FEE2E2; color: #DC2626; }
+.badge-success { background: #DCFCE7; color: #16A34A; }
+.badge-warning { background: #FEF3C7; color: #D97706; }
+
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: 16px; padding: 40px;
+  text-align: center; cursor: pointer; transition: all 0.3s; background: #FAFAFA;
+}
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--primary); background: #FFF5F0; }
+.upload-zone .icon { font-size: 48px; margin-bottom: 12px; }
+.upload-zone p { color: var(--text-muted); font-size: 14px; }
+
+.folder-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.folder-tab {
+  padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 2px solid var(--border); transition: all 0.2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.folder-tab.active { border-color: var(--primary); background: #FFF5F0; color: var(--primary); }
+.folder-tab:hover { border-color: var(--primary); }
+.folder-tab input[type="file"] { display: none; }
+
+.log-console {
+  background: #1a1a2e; color: #00ff88; border-radius: 12px; padding: 16px;
+  font-family: 'Fira Code', 'Consolas', monospace; font-size: 12px;
+  max-height: 300px; overflow-y: auto; line-height: 1.6;
+}
+.log-console .log-line { padding: 2px 0; }
+.log-console .log-line::before { content: '> '; color: var(--primary); }
+
+.progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 16px 0; }
+.progress-bar .fill {
+  height: 100%; background: linear-gradient(90deg, var(--primary), var(--highlight));
+  border-radius: 3px; transition: width 0.5s; animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  padding: 14px 20px; border-radius: 12px; color: white; font-size: 14px;
+  font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.15); animation: slideIn 0.3s;
+  display: flex; align-items: center; gap: 10px; max-width: 400px;
+}
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+.toast.info { background: var(--primary); }
+@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+.file-list { list-style: none; }
+.file-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; gap: 16px;
+}
+.file-item .name { font-weight: 500; flex: 1; }
+.file-item .meta { color: var(--text-muted); font-size: 11px; text-align: right; white-space: nowrap; }
+
+.settings-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.settings-row input { margin-bottom: 0; }
+
+.search-bar {
+  display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+}
+.search-bar input, .search-bar select {
+  padding: 8px 14px; border: 2px solid var(--border); border-radius: 8px;
+  font-size: 13px; font-family: 'Inter', sans-serif; transition: border-color 0.2s;
+}
+.search-bar input:focus, .search-bar select:focus { outline: none; border-color: var(--primary); }
+.search-bar input { flex: 1; min-width: 180px; }
+
+.active-filter-bar {
+  background: #FFF5F0; border: 2px solid var(--primary); border-radius: 10px;
+  padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center;
+  justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--primary);
+}
+.active-filter-bar .clear-btn {
+  background: var(--primary); color: white; border: none; padding: 4px 14px;
+  border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+}
+
+.celebration-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500;
+  display: none; align-items: center; justify-content: center; backdrop-filter: blur(6px);
+}
+.celebration-overlay.show { display: flex; }
+.celebration-box {
+  background: white; border-radius: 24px; padding: 48px 60px; text-align: center;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.3); max-width: 500px; position: relative;
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.celebration-emojis { font-size: 64px; margin-bottom: 16px; animation: bounce 1s infinite; }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+.celebration-title { font-size: 28px; font-weight: 900; color: var(--success); margin-bottom: 8px; }
+.celebration-msg { font-size: 16px; color: var(--text-muted); margin-bottom: 24px; }
+.confetti-piece {
+  position: fixed; width: 10px; height: 10px; border-radius: 2px;
+  animation: confettiFall 3s linear forwards; z-index: 501; pointer-events: none;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-area">
+      <svg class="talabat-logo" viewBox="0 0 42 42" style="width:42px;height:42px;border-radius:8px;">
+        <rect width="42" height="42" rx="8" fill="#FF5900"/>
+        <text x="21" y="30" text-anchor="middle" font-size="28" font-weight="900" fill="white" font-family="Inter,Arial,sans-serif">T</text>
+      </svg>
+      <div>
+        <div class="logo-text">Fraud Hunter</div>
+        <div class="logo-sub">talabat</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-menu">
+    <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+      <span class="icon">&#x1F4CA;</span> Dashboard
+    </div>
+    <div class="nav-item" data-page="fraud-table" onclick="showPage('fraud-table')">
+      <span class="icon">&#x1F6A8;</span> Potential Fraud
+    </div>
+    <div class="nav-item" data-page="emails" onclick="showPage('emails')">
+      <span class="icon">&#x1F4E7;</span> Suspicious Emails
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-page="upload" onclick="showPage('upload')">
+      <span class="icon">&#x1F4C1;</span> Upload Data
+    </div>
+    <div class="nav-item" data-page="run" onclick="showPage('run')">
+      <span class="icon">&#x26A1;</span> Run Analysis
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-page="share" onclick="showPage('share')">
+      <span class="icon">&#x1F4E4;</span> Share & Export
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="pageTitle">Fraud Analysis Dashboard</div>
+      <div class="topbar-subtitle">Powered by Talabat Platform - UAE Finance</div>
+    </div>
+    <div class="topbar-actions">
+      <span class="topbar-time" id="lastUpdated"></span>
+      <button class="btn btn-outline btn-sm" onclick="loadResults()">&#x1F504; Refresh</button>
+      <div class="dropdown-wrap">
+        <button class="btn btn-primary btn-sm dropdown-btn" onclick="toggleDownloadMenu(event)">&#x2B07;&#xFE0F; Download &#x25BE;</button>
+        <div class="dropdown-menu" id="downloadMenu">
+          <button class="dropdown-item" onclick="downloadExcel();closeDownloadMenu();">
+            <span class="dd-icon">&#x1F4CA;</span> Excel (.xlsx)
+          </button>
+          <button class="dropdown-item" onclick="downloadPDF();closeDownloadMenu();">
+            <span class="dd-icon">&#x1F4C4;</span> PDF (.pdf)
+          </button>
+          <button class="dropdown-item" onclick="exportGoogleSheets();closeDownloadMenu();">
+            <span class="dd-icon">&#x1F4D7;</span> Google Sheets
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div id="activeFilterBar" style="display:none;" class="active-filter-bar">
+        <span id="activeFilterText"></span>
+        <button class="clear-btn" onclick="clearDrillDown()">&#x2716; Clear Filter</button>
+      </div>
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card orange">
+          <div class="stat-icon">&#x1F4CB;</div>
+          <div class="stat-value" id="statDetailedTotal">--</div>
+          <div class="stat-label">Total Orders (Detailed Report)</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon">&#x1F6A8;</div>
+          <div class="stat-value" id="statPotentialFraud">--</div>
+          <div class="stat-label">Potential Fraud</div>
+        </div>
+        <div class="stat-card lime">
+          <div class="stat-icon">&#x1F4B0;</div>
+          <div class="stat-value" id="statFraudValue">--</div>
+          <div class="stat-label">Potential Fraud Amount (AED)</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">&#x1F4C8;</div>
+          <div class="stat-value" id="statFraudPct">--</div>
+          <div class="stat-label">Potential Fraud %</div>
+        </div>
+      </div>
+      <div class="charts-grid">
+        <div class="card">
+          <div class="card-title">&#x1F4CA; Potential Fraud by Customer Group</div>
+          <div class="chart-container"><canvas id="chartGroup"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">&#x1F4C5; Potential Fraud by Date</div>
+          <div class="chart-container"><canvas id="chartDate"></canvas></div>
+        </div>
+      </div>
+      <div class="charts-grid" style="margin-top:20px;">
+        <div class="card">
+          <div class="card-title">&#x1F3E2; Potential Fraud by Restaurant (Top 10)</div>
+          <div class="chart-container"><canvas id="chartRestaurant"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">&#x1F4CD; Potential Fraud by Branch (Top 10)</div>
+          <div class="chart-container"><canvas id="chartBranch"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POTENTIAL FRAUD TABLE PAGE -->
+    <div class="page" id="page-fraud-table">
+      <div class="card">
+        <div class="card-title">&#x1F6A8; Potential Fraud Orders</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+          Analyzed by: Total Sale &ge; AED 10,000 and/or Orders &ge; 1,000, email used multiple times across flagged orders, or duplicate Total Sale with same Restaurant ID and same Customer Email.
+        </p>
+        <div class="search-bar">
+          <input type="text" id="fraudSearchRestaurant" placeholder="Search Restaurant..." oninput="filterFraudTable()">
+          <input type="text" id="fraudSearchRID" placeholder="Restaurant ID..." oninput="filterFraudTable()">
+          <input type="text" id="fraudSearchDate" placeholder="Date (DD-MMM-YYYY)..." oninput="filterFraudTable()">
+          <input type="text" id="fraudSearchEmail" placeholder="Customer Email..." oninput="filterFraudTable()">
+          <button class="btn btn-sm btn-outline" onclick="clearFraudFilters()">Clear</button>
+        </div>
+        <div class="table-wrap" id="fraudTableWrap">
+          <table class="data-table" id="fraudTable">
+            <thead><tr>
+              <th onclick="sortFraudTable('serial')">#</th>
+              <th onclick="sortFraudTable('restaurantId')">Restaurant Id</th>
+              <th onclick="sortFraudTable('branchId')">Branch Id</th>
+              <th onclick="sortFraudTable('restaurant')">Restaurant</th>
+              <th onclick="sortFraudTable('branch')">Branch</th>
+              <th onclick="sortFraudTable('orderId')">Order Id</th>
+              <th onclick="sortFraudTable('dateTime')">Date / Time</th>
+              <th onclick="sortFraudTable('paymentMethod')">Payment Method</th>
+              <th onclick="sortFraudTable('status')">Status</th>
+              <th onclick="sortFraudTable('serviceType')">Service Type</th>
+              <th onclick="sortFraudTable('subTotal')">SubTotal</th>
+              <th onclick="sortFraudTable('totalSale')">Total Sale</th>
+              <th onclick="sortFraudTable('netPayment')">Net Payment</th>
+              <th onclick="sortFraudTable('customerGroup')">Customer Group</th>
+              <th onclick="sortFraudTable('customerAccount')">Customer Account</th>
+              <th onclick="sortFraudTable('customerEmail')">Customer Email</th>
+              <th onclick="sortFraudTable('reasons')">Potential Fraud Reasons</th>
+            </tr></thead>
+            <tbody id="fraudTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUSPICIOUS EMAILS PAGE -->
+    <div class="page" id="page-emails">
+      <div class="card">
+        <div class="card-title">&#x1F4E7; Top 20 Suspicious Emails (from Checkout Data)</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+          Emails analyzed directly from checkout payment data. Ranked by suspicion score (frequency + consecutive burst patterns).
+        </p>
+        <div class="search-bar">
+          <input type="text" id="emailSearch" placeholder="Search Customer Email (partial match)..." oninput="filterEmailTable()" style="flex:2;">
+          <button class="btn btn-sm btn-outline" onclick="document.getElementById('emailSearch').value='';filterEmailTable();">Clear</button>
+        </div>
+        <div class="table-wrap" id="emailTableWrap">
+          <table class="data-table" id="emailTable">
+            <thead><tr>
+              <th onclick="sortEmailTable('rank')">Rank</th>
+              <th onclick="sortEmailTable('email')">Customer Email</th>
+              <th onclick="sortEmailTable('count')">Order Count</th>
+              <th onclick="sortEmailTable('totalAmount')">Total Amount</th>
+              <th onclick="sortEmailTable('maxBurst')">Max Burst</th>
+              <th onclick="sortEmailTable('firstSeen')">First Seen</th>
+              <th onclick="sortEmailTable('lastSeen')">Last Seen</th>
+            </tr></thead>
+            <tbody id="emailTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-title">&#x1F4CA; Email Frequency Distribution</div>
+        <div class="chart-container" style="height:350px;"><canvas id="chartEmails"></canvas></div>
+      </div>
+    </div>
+
+    <!-- UPLOAD PAGE -->
+    <div class="page" id="page-upload">
+      <div class="card">
+        <div class="card-title">&#x1F4C1; Upload Data Files</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+          Click any folder icon below to upload files directly, or use the drag & drop zone. After uploading, go to "Run Analysis" to process the data.
+        </p>
+        <div class="folder-tabs">
+          <div class="folder-tab active" data-folder="detailed-reports" onclick="selectFolder(this)">
+            &#x1F4C4; Detailed Reports
+            <input type="file" id="fileInputDetailedReports" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('detailed-reports', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputDetailedReports').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
+          </div>
+          <div class="folder-tab" data-folder="checkout" onclick="selectFolder(this)">
+            &#x1F4B3; Checkout
+            <input type="file" id="fileInputCheckout" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('checkout', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputCheckout').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
+          </div>
+          <div class="folder-tab" data-folder="ax365" onclick="selectFolder(this)">
+            &#x1F4CA; AX365
+            <input type="file" id="fileInputAx365" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('ax365', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputAx365').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
+          </div>
+          <div class="folder-tab" data-folder="branch-inquiry" onclick="selectFolder(this)">
+            &#x1F3E2; Branch Inquiry
+            <input type="file" id="fileInputBranchInquiry" multiple accept=".xlsx,.csv" onchange="uploadFilesToFolder('branch-inquiry', this.files)">
+            <span class="btn btn-sm btn-outline" onclick="event.stopPropagation();document.getElementById('fileInputBranchInquiry').click();" style="padding:2px 8px;font-size:11px;">+ Upload</span>
+          </div>
+        </div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+             ondragover="event.preventDefault();this.classList.add('dragover')"
+             ondragleave="this.classList.remove('dragover')"
+             ondrop="handleDrop(event)">
+          <div class="icon">&#x1F4C2;</div>
+          <p><strong>Click to browse</strong> or drag & drop files here</p>
+          <p style="font-size:12px;margin-top:8px;">Supports .xlsx and .csv files (up to 500MB)</p>
+        </div>
+        <input type="file" id="fileInput" multiple accept=".xlsx,.csv" style="display:none" onchange="uploadFiles(this.files)">
+        <div id="uploadProgress" style="display:none;">
+          <div class="progress-bar"><div class="fill" id="uploadFill" style="width:0%"></div></div>
+          <p id="uploadStatus" style="font-size:13px;color:var(--text-muted);"></p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">&#x1F4C2; Current Files</div>
+        <div id="fileListContainer"><p style="color:var(--text-muted);font-size:13px;">No files uploaded yet.</p></div>
+      </div>
+    </div>
+
+    <!-- RUN ANALYSIS PAGE -->
+    <div class="page" id="page-run">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:64px;margin-bottom:16px;">&#x26A1;</div>
+        <h2 style="margin-bottom:8px;">Run Fraud Analysis</h2>
+        <p style="color:var(--text-muted);max-width:500px;margin:0 auto 24px;">
+          Process all uploaded data files, apply fraud detection rules, and generate the analysis report.
+        </p>
+        <button class="btn btn-primary" id="btnRun" onclick="runAnalysis()" style="font-size:16px;padding:14px 36px;">
+          &#x1F680; Run Analysis
+        </button>
+        <div id="runProgress" style="display:none;margin-top:24px;text-align:left;">
+          <div class="progress-bar"><div class="fill" id="runFill" style="width:0%"></div></div>
+          <div class="log-console" id="runLog"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHARE & EXPORT PAGE -->
+    <div class="page" id="page-share">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
+        <div class="card" style="text-align:center;">
+          <div style="font-size:48px;margin-bottom:12px;">&#x1F4E5;</div>
+          <h3>Download Excel</h3>
+          <p style="color:var(--text-muted);font-size:13px;margin:8px 0 20px;">Full fraud analysis Excel with all sheets.</p>
+          <button class="btn btn-primary" onclick="downloadExcel()">&#x2B07;&#xFE0F; Excel</button>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:48px;margin-bottom:12px;">&#x1F4C4;</div>
+          <h3>Download PDF</h3>
+          <p style="color:var(--text-muted);font-size:13px;margin:8px 0 20px;">Dashboard snapshot as a PDF report.</p>
+          <button class="btn btn-accent" onclick="downloadPDF()">&#x1F4C4; PDF</button>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:48px;margin-bottom:12px;">&#x1F4AC;</div>
+          <h3>Copy for Slack</h3>
+          <p style="color:var(--text-muted);font-size:13px;margin:8px 0 20px;">Copy report summary to paste in Slack.</p>
+          <button class="btn btn-accent" onclick="copyForSlack()">&#x1F4CB; Copy</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-title">&#x1F4E7; Share Top 20 Emails via Email</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+          Opens your default email client with the top 20 suspicious emails pre-filled.
+        </p>
+        <div class="settings-row">
+          <div><label>TO</label><input id="emailTo" placeholder="recipient@talabat.com"></div>
+          <div><label>CC</label><input id="emailCc" placeholder="cc@talabat.com (optional)"></div>
+        </div>
+        <div class="settings-row" style="margin-top:10px;">
+          <div><label>Subject</label><input id="emailSubject" placeholder="Fraud Alert - Suspicious Customer Emails"></div>
+          <div></div>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" id="btnSendEmail" onclick="sendEmail()">&#x1F4E8; Open Email</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Celebration popup -->
+<div class="celebration-overlay" id="celebrationOverlay">
+  <div class="celebration-box">
+    <div class="celebration-emojis">&#x1F389;&#x1F973;&#x1F38A;</div>
+    <div class="celebration-title">No Fraud Detected!</div>
+    <div class="celebration-msg">All transactions look clean. Happy party poopers!</div>
+    <button class="btn btn-success" onclick="closeCelebration()" style="margin-top:8px;">&#x1F44D; Awesome!</button>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+var dashboardData = null;
+var charts = {};
+var currentFolder = 'detailed-reports';
+var activeDrillDown = null;
+var fraudSortField = 'totalSale';
+var fraudSortAsc = false;
+var emailSortField = 'count';
+var emailSortAsc = false;
+var latestAllRecords = null;
+
+var folderKeyMap = {
+  'detailed-reports': 'Detailed Reports',
+  'checkout': 'Checkout',
+  'ax365': 'AX365',
+  'branch-inquiry': 'Branch Inquiry'
+};
+
+var uploadedFiles = {
+  'Detailed Reports': [],
+  'Checkout': [],
+  'AX365': [],
+  'Branch Inquiry': []
+};
+
+/* ============================================================
+   FRAUD ENGINE — optimized for browser with chunked processing
+   ============================================================ */
+var MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function excelDateToStr(serial) {
+  if (!serial || typeof serial !== 'number') return serial;
+  var utcDays = Math.floor(serial - 25569);
+  var utcValue = utcDays * 86400;
+  var d = new Date(utcValue * 1000);
+  var frac = serial - Math.floor(serial);
+  var totalSecs = Math.round(frac * 86400);
+  var hrs = Math.floor(totalSecs / 3600);
+  var mins = Math.floor((totalSecs % 3600) / 60);
+  var dd = String(d.getUTCDate()).padStart(2, '0');
+  var mmm = MONTHS_SHORT[d.getUTCMonth()];
+  var yyyy = d.getUTCFullYear();
+  return dd + '-' + mmm + '-' + yyyy + ' ' + String(hrs).padStart(2,'0') + ':' + String(mins).padStart(2,'0');
+}
+
+function dateOnlyDDMMMYYYY(dateTimeStr) {
+  if (!dateTimeStr || typeof dateTimeStr !== 'string') return dateTimeStr || '(unknown)';
+  return dateTimeStr.split(' ')[0];
+}
+
+function parseCSVLine(line) {
+  var result = [];
+  var current = '';
+  var inQuotes = false;
+  for (var i = 0; i < line.length; i++) {
+    var c = line[i];
+    if (inQuotes) {
+      if (c === '"' && line[i + 1] === '"') { current += '"'; i++; }
+      else if (c === '"') inQuotes = false;
+      else current += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { result.push(current); current = ''; }
+      else current += c;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function engineLog(msg) {
+  var logEl = document.getElementById('runLog');
+  if (logEl) {
+    logEl.innerHTML += '<div class="log-line">' + msg + '</div>';
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+}
+
+function yieldToUI() {
+  return new Promise(function(resolve) { setTimeout(resolve, 0); });
+}
+
+function readDetailedReportsFromMemory() {
+  var files = uploadedFiles['Detailed Reports'];
+  if (!files.length) throw new Error('No files in Detailed Reports folder. Upload .xlsx files first.');
+
+  var colMap = {
+    11: 'Restaurant Id', 12: 'Restaurant', 13: 'Branch Id', 14: 'Branch',
+    15: 'Order Id', 17: 'Date / Time', 18: 'Payment Method', 19: 'Status',
+    20: 'Service Type', 24: 'SubTotal', 31: 'Total Sale', 63: 'Net Payment Per Order'
+  };
+  var colNums = Object.keys(colMap).map(Number);
+  var records = [];
+  var seenOrderIds = new Set();
+  var totalDetailedRows = 0;
+
+  for (var fi = 0; fi < files.length; fi++) {
+    var file = files[fi];
+    engineLog('  Reading: ' + file.name);
+
+    if (file.name.toLowerCase().endsWith('.csv')) {
+      var text = new TextDecoder().decode(file.data);
+      var lines = text.split(/\r?\n/);
+      for (var li = 3; li < lines.length; li++) {
+        if (!lines[li].trim()) continue;
+        totalDetailedRows++;
+        var fields = parseCSVLine(lines[li]);
+        var rec = {};
+        for (var ci = 0; ci < colNums.length; ci++) {
+          var cn = colNums[ci];
+          if (fields[cn] !== undefined) rec[colMap[cn]] = fields[cn];
+        }
+        var totalSale = parseFloat(rec['Total Sale']);
+        if (isNaN(totalSale) || totalSale < 1000) continue;
+        rec['Total Sale'] = totalSale;
+        rec['SubTotal'] = parseFloat(rec['SubTotal']) || 0;
+        rec['Net Payment Per Order'] = parseFloat(rec['Net Payment Per Order']) || 0;
+        rec['Restaurant Id'] = rec['Restaurant Id'] ? String(rec['Restaurant Id']) : '';
+        rec['Branch Id'] = rec['Branch Id'] ? String(rec['Branch Id']) : '';
+        rec['Order Id'] = rec['Order Id'] ? String(rec['Order Id']) : '';
+        if (seenOrderIds.has(rec['Order Id'])) continue;
+        seenOrderIds.add(rec['Order Id']);
+        records.push(rec);
+      }
+      lines = null;
+      text = null;
+    } else {
+      var wb = XLSX.read(file.data, { type: 'array', dense: true });
+      var wsName = wb.SheetNames[0];
+      var ws = wb.Sheets[wsName];
+      var data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      wb = null; ws = null;
+
+      for (var ri = 3; ri < data.length; ri++) {
+        totalDetailedRows++;
+        var row = data[ri];
+        if (!row) continue;
+        var rec2 = {};
+        for (var ci2 = 0; ci2 < colNums.length; ci2++) {
+          var cn2 = colNums[ci2];
+          if (row[cn2] !== undefined && row[cn2] !== null) rec2[colMap[cn2]] = row[cn2];
+        }
+        var ts = parseFloat(rec2['Total Sale']);
+        if (isNaN(ts) || ts < 1000) continue;
+        rec2['Total Sale'] = ts;
+        rec2['SubTotal'] = parseFloat(rec2['SubTotal']) || 0;
+        rec2['Net Payment Per Order'] = parseFloat(rec2['Net Payment Per Order']) || 0;
+        rec2['Restaurant Id'] = rec2['Restaurant Id'] ? String(rec2['Restaurant Id']) : '';
+        rec2['Branch Id'] = rec2['Branch Id'] ? String(rec2['Branch Id']) : '';
+        rec2['Order Id'] = rec2['Order Id'] ? String(rec2['Order Id']) : '';
+        rec2['Date / Time'] = excelDateToStr(rec2['Date / Time']);
+        if (seenOrderIds.has(rec2['Order Id'])) continue;
+        seenOrderIds.add(rec2['Order Id']);
+        records.push(rec2);
+      }
+      data = null;
+    }
+    engineLog('    Accumulated ' + records.length + ' records (Total Sale >= 1000) out of ' + totalDetailedRows + ' total');
+  }
+  return { records: records, totalDetailedRows: totalDetailedRows };
+}
+
+function readBranchInquiryFromMemory() {
+  var files = uploadedFiles['Branch Inquiry'];
+  if (!files.length) return {};
+  engineLog('  Reading Branch Inquiry: ' + files[0].name);
+  var wb = XLSX.read(files[0].data, { type: 'array' });
+  var ws = wb.Sheets[wb.SheetNames[0]];
+  var data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+  wb = null; ws = null;
+  var lookup = {};
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row) continue;
+    var branchId = String(row[6] || '');
+    if (branchId) lookup[branchId] = { 'Customer account': String(row[0] || ''), 'Customer group': String(row[2] || '') };
+  }
+  data = null;
+  engineLog('    ' + Object.keys(lookup).length + ' branch entries');
+  return lookup;
+}
+
+function readAX365FromMemory() {
+  var files = uploadedFiles['AX365'];
+  if (!files.length) return {};
+  engineLog('  Reading AX365: ' + files[0].name);
+  var wb = XLSX.read(files[0].data, { type: 'array' });
+  var ws = wb.Sheets[wb.SheetNames[0]];
+  var data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+  wb = null; ws = null;
+  var lookup = {};
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row) continue;
+    var branchId = String(row[4] || '');
+    if (branchId) lookup[branchId] = { 'Branch AX Code': String(row[6] || '') };
+  }
+  data = null;
+  engineLog('    ' + Object.keys(lookup).length + ' AX entries');
+  return lookup;
+}
+
+function readCheckoutForOrdersFromMemory(orderIds) {
+  var files = uploadedFiles['Checkout'];
+  if (!files.length) return {};
+  var lookup = {};
+  var orderIdSet = new Set(orderIds);
+
+  for (var fi = 0; fi < files.length; fi++) {
+    var file = files[fi];
+    if (!file.name.toLowerCase().endsWith('.csv')) continue;
+    engineLog('  Checkout (orders): ' + file.name);
+    var text = new TextDecoder().decode(file.data);
+    var lines = text.split(/\r?\n/);
+    text = null;
+    var headers = null, refIdx, actionIdx, respIdx, emailIdx, amountIdx;
+    var lineCount = 0, matchCount = 0;
+    for (var i = 0; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      lineCount++;
+      var fields = parseCSVLine(lines[i]);
+      if (!headers) {
+        headers = fields;
+        refIdx = headers.indexOf('Reference');
+        actionIdx = headers.indexOf('Action Type');
+        respIdx = headers.indexOf('Response Description');
+        emailIdx = headers.indexOf('Customer Email');
+        amountIdx = headers.indexOf('Amount');
+        continue;
+      }
+      var ref = (fields[refIdx] || '').trim();
+      if (!ref || !orderIdSet.has(ref)) continue;
+      var actionType = (fields[actionIdx] || '').trim();
+      if (actionType && actionType !== 'Authorisation') continue;
+      var respDesc = (fields[respIdx] || '').trim();
+      if (respDesc && respDesc !== 'Approved') continue;
+      var amount = parseFloat(fields[amountIdx]) || 0;
+      var email = (fields[emailIdx] || '').trim();
+      if (!lookup[ref]) { lookup[ref] = { actionType: actionType, respDesc: respDesc, email: email, amount: amount }; matchCount++; }
+      else if (actionType === 'Authorisation') { lookup[ref] = { actionType: actionType, respDesc: respDesc, email: email, amount: amount }; }
+    }
+    lines = null;
+    engineLog('    ' + lineCount + ' lines, ' + matchCount + ' matches');
+  }
+  return lookup;
+}
+
+function readCheckoutEmailStatsFromMemory() {
+  var files = uploadedFiles['Checkout'];
+  if (!files.length) return [];
+  var emailData = {};
+
+  for (var fi = 0; fi < files.length; fi++) {
+    var file = files[fi];
+    if (!file.name.toLowerCase().endsWith('.csv')) continue;
+    engineLog('  Checkout (emails): ' + file.name);
+    var text = new TextDecoder().decode(file.data);
+    var lines = text.split(/\r?\n/);
+    text = null;
+    var headers = null, emailIdx, dateIdx, actionIdx, amountIdx;
+    var lineCount = 0;
+    for (var i = 0; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      lineCount++;
+      var fields = parseCSVLine(lines[i]);
+      if (!headers) {
+        headers = fields;
+        emailIdx = headers.indexOf('Customer Email');
+        dateIdx = headers.indexOf('Action Date UTC');
+        actionIdx = headers.indexOf('Action Type');
+        amountIdx = headers.indexOf('Amount');
+        continue;
+      }
+      var email = (fields[emailIdx] || '').trim();
+      if (!email) continue;
+      var actionType = (fields[actionIdx] || '').trim();
+      if (actionType !== 'Authorisation') continue;
+      var dateStr = (fields[dateIdx] || '').trim();
+      var amount = parseFloat(fields[amountIdx]) || 0;
+      if (!emailData[email]) emailData[email] = { count: 0, totalAmount: 0, timestamps: [] };
+      emailData[email].count++;
+      emailData[email].totalAmount += amount;
+      if (dateStr) emailData[email].timestamps.push(dateStr);
+    }
+    lines = null;
+    engineLog('    ' + lineCount + ' lines scanned');
+  }
+
+  var result = Object.entries(emailData)
+    .filter(function(e) { return e[1].count > 1; })
+    .map(function(e) {
+      var email = e[0], d = e[1];
+      d.timestamps.sort();
+      var consecutiveCount = 0, maxBurst = 1, currentBurst = 1;
+      for (var i = 1; i < d.timestamps.length; i++) {
+        var t1 = new Date(d.timestamps[i - 1]).getTime();
+        var t2 = new Date(d.timestamps[i]).getTime();
+        var diffMins = (t2 - t1) / 60000;
+        if (diffMins <= 60) { currentBurst++; consecutiveCount++; }
+        else { maxBurst = Math.max(maxBurst, currentBurst); currentBurst = 1; }
+      }
+      maxBurst = Math.max(maxBurst, currentBurst);
+      var suspicionScore = d.count * 2 + consecutiveCount * 5 + maxBurst * 3;
+      return {
+        email: email, count: d.count, totalAmount: Math.round(d.totalAmount * 100) / 100,
+        consecutiveCount: consecutiveCount, maxBurst: maxBurst,
+        firstSeen: d.timestamps[0] || '', lastSeen: d.timestamps[d.timestamps.length - 1] || '',
+        suspicionScore: suspicionScore
+      };
+    })
+    .sort(function(a, b) { return b.suspicionScore - a.suspicionScore; });
+  emailData = null;
+  return result;
+}
+
+function mergeData(records, branchInq, ax365, checkout) {
+  for (var i = 0; i < records.length; i++) {
+    var rec = records[i];
+    var bid = rec['Branch Id'], oid = rec['Order Id'];
+    var bi = branchInq[bid] || {};
+    rec['Customer group'] = bi['Customer group'] || '';
+    rec['Customer account'] = bi['Customer account'] || '';
+    var ax = ax365[bid] || {};
+    rec['Branch AX Code'] = ax['Branch AX Code'] || '';
+    rec['MSD Checker'] = rec['Customer account'] && rec['Branch AX Code']
+      ? (rec['Customer account'] === rec['Branch AX Code'] ? 'True' : 'False') : '';
+    var co = checkout[oid] || {};
+    rec['Action Type'] = co.actionType || '';
+    rec['Response Description'] = co.respDesc || '';
+    rec['Customer Email'] = co.email || '';
+    rec['Checkout Amount'] = co.amount || null;
+  }
+  return records;
+}
+
+function applyFraudRules(records) {
+  var dupByRestaurantId = {}, dupByBranchId = {}, dupByCustGroup = {}, dupByEmail = {}, emailCounts = {};
+  var i, rec, ts, rid, bid, cg, em;
+  for (i = 0; i < records.length; i++) {
+    rec = records[i];
+    ts = rec['Total Sale']; rid = rec['Restaurant Id']; bid = rec['Branch Id'];
+    cg = rec['Customer group']; em = rec['Customer Email'];
+    dupByRestaurantId[rid + '_' + ts] = (dupByRestaurantId[rid + '_' + ts] || 0) + 1;
+    dupByBranchId[bid + '_' + ts] = (dupByBranchId[bid + '_' + ts] || 0) + 1;
+    if (cg) dupByCustGroup[cg + '_' + ts] = (dupByCustGroup[cg + '_' + ts] || 0) + 1;
+    if (em) {
+      dupByEmail[em + '_' + ts] = (dupByEmail[em + '_' + ts] || 0) + 1;
+      emailCounts[em] = (emailCounts[em] || 0) + 1;
+    }
+  }
+  for (i = 0; i < records.length; i++) {
+    rec = records[i];
+    var reasons = [];
+    ts = rec['Total Sale']; rid = rec['Restaurant Id']; bid = rec['Branch Id'];
+    cg = rec['Customer group']; em = rec['Customer Email'];
+    var pm = (rec['Payment Method'] || '').toLowerCase();
+    var coAmt = rec['Checkout Amount'];
+    if (ts >= 10000) reasons.push('Total Sale unusually high: AED ' + ts.toLocaleString());
+    if (dupByRestaurantId[rid + '_' + ts] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Restaurant Id ' + rid);
+    if (dupByBranchId[bid + '_' + ts] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Branch Id ' + bid);
+    if (cg && dupByCustGroup[cg + '_' + ts] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Customer Group ' + cg);
+    if (em && dupByEmail[em + '_' + ts] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') under same Customer Email');
+    if (em && emailCounts[em] > 2) reasons.push('Customer Email used ' + emailCounts[em] + ' times (suspicious frequency)');
+    if (pm === 'credit card' || pm === 'talabat credit') {
+      if (coAmt !== null && coAmt !== undefined) {
+        var diff = coAmt - ts;
+        if (diff < -200) reasons.push('Checkout Amount (' + coAmt + ') minus Total Sale (' + ts + ') = ' + diff.toFixed(2) + ', below -200 threshold');
+      }
+    }
+    if (pm === 'cash') reasons.push('Payment Method is Cash (high-value cash order)');
+    rec['Fraud Reasons'] = reasons.join('; ');
+    rec['Potential Fraud'] = reasons.length > 0 ? 'Yes' : 'No';
+  }
+  return records;
+}
+
+function applyPotentialFraudFilter(records) {
+  var dupByRidEmail = {}, emailCounts = {};
+  var i, rec, ts, rid, em, key;
+  for (i = 0; i < records.length; i++) {
+    rec = records[i];
+    if (rec['Potential Fraud'] !== 'Yes') continue;
+    ts = rec['Total Sale']; rid = rec['Restaurant Id']; em = rec['Customer Email'];
+    if (rid && em) { key = rid + '_' + em + '_' + ts; dupByRidEmail[key] = (dupByRidEmail[key] || 0) + 1; }
+    if (em) emailCounts[em] = (emailCounts[em] || 0) + 1;
+  }
+  var potentialFraud = [];
+  for (i = 0; i < records.length; i++) {
+    rec = records[i];
+    if (rec['Potential Fraud'] !== 'Yes') continue;
+    ts = rec['Total Sale']; rid = rec['Restaurant Id']; em = rec['Customer Email'];
+    var reasons = [];
+    if (ts >= 10000) reasons.push('Unusually high amount: AED ' + ts.toLocaleString());
+    if (em && emailCounts[em] > 1) reasons.push('Email used ' + emailCounts[em] + ' times across flagged orders');
+    if (rid && em && dupByRidEmail[rid + '_' + em + '_' + ts] > 1) reasons.push('Duplicate Total Sale (AED ' + ts + ') with same Restaurant Id ' + rid + ' AND same email ' + em);
+    if (reasons.length > 0) {
+      rec['Potential Fraud Reasons'] = reasons.join('; ');
+      rec['Potential Fraud Filter'] = 'Yes';
+      potentialFraud.push(rec);
+    }
+  }
+  return potentialFraud;
+}
+
+/* ============================================================
+   UI FUNCTIONS
+   ============================================================ */
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  document.getElementById('page-' + page).classList.add('active');
+  var navItem = document.querySelector('.nav-item[data-page="' + page + '"]');
+  if (navItem) navItem.classList.add('active');
+  var titles = {
+    'dashboard': 'Fraud Analysis Dashboard', 'fraud-table': 'Potential Fraud Orders',
+    'emails': 'Suspicious Customer Emails', 'upload': 'Upload Data Files',
+    'run': 'Run Analysis', 'share': 'Share & Export'
+  };
+  document.getElementById('pageTitle').textContent = titles[page] || '';
+}
+
+function toast(msg, type) {
+  type = type || 'info';
+  var el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = '<span>' + (type === 'success' ? '&#x2705;' : type === 'error' ? '&#x274C;' : '&#x2139;&#xFE0F;') + '</span> ' + msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(function() { el.remove(); }, 5000);
+}
+
+function fmtNum(n) { return n != null ? Number(n).toLocaleString() : '--'; }
+function fmtAED(n) { return n != null ? 'AED ' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'; }
+function stripTime(dt) { return dt ? String(dt).split(' ')[0] : ''; }
+
+function toggleDownloadMenu(e) { e.stopPropagation(); document.getElementById('downloadMenu').classList.toggle('show'); }
+function closeDownloadMenu() { document.getElementById('downloadMenu').classList.remove('show'); }
+document.addEventListener('click', function() { closeDownloadMenu(); });
+
+function getFilteredRecords() {
+  if (!dashboardData || !dashboardData.potentialFraudRecords) return [];
+  if (!activeDrillDown) return dashboardData.potentialFraudRecords;
+  var field = activeDrillDown.field, value = activeDrillDown.value;
+  return dashboardData.potentialFraudRecords.filter(function(r) {
+    if (field === 'customerGroup') return r.customerGroup === value;
+    if (field === 'date') return (r.dateTime || '').substring(0, 11) === value;
+    if (field === 'restaurant') return r.restaurant === value;
+    if (field === 'branch') return r.branch === value;
+    return true;
+  });
+}
+
+function applyDrillDown(field, value) {
+  activeDrillDown = { field: field, value: value };
+  document.getElementById('activeFilterText').textContent = 'Filtered: ' + field + ' = "' + value + '"';
+  document.getElementById('activeFilterBar').style.display = 'flex';
+  renderDashboardWithFilter();
+}
+
+function clearDrillDown() {
+  activeDrillDown = null;
+  document.getElementById('activeFilterBar').style.display = 'none';
+  renderDashboard();
+}
+
+function renderDashboardWithFilter() {
+  if (!dashboardData) return;
+  var filtered = getFilteredRecords();
+  var count = filtered.length;
+  var totalVal = filtered.reduce(function(s, r) { return s + (r.totalSale || 0); }, 0);
+  var totalOrders = dashboardData.summary.totalDetailedRows;
+  var pct = totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(2) : '0.00';
+  document.getElementById('statDetailedTotal').textContent = fmtNum(totalOrders);
+  document.getElementById('statPotentialFraud').textContent = fmtNum(count);
+  document.getElementById('statFraudValue').textContent = fmtAED(totalVal);
+  document.getElementById('statFraudPct').textContent = pct + '%';
+  renderChartsFromRecords(filtered);
+}
+
+function loadResults() {
+  try {
+    var stored = localStorage.getItem('fraudHunterResults');
+    if (stored) {
+      dashboardData = JSON.parse(stored);
+      activeDrillDown = null;
+      document.getElementById('activeFilterBar').style.display = 'none';
+      renderDashboard();
+      document.getElementById('lastUpdated').textContent = dashboardData.generatedAt
+        ? 'Updated: ' + new Date(dashboardData.generatedAt).toLocaleString() : '';
+      checkCelebration();
+    } else {
+      toast('No analysis results yet. Upload data and run analysis first.', 'info');
+    }
+  } catch (e) { console.error(e); }
+}
+
+function checkCelebration() {
+  if (!dashboardData) return;
+  if (dashboardData.summary.potentialFraudCount === 0) showCelebration();
+}
+function showCelebration() {
+  document.getElementById('celebrationOverlay').classList.add('show');
+  launchConfetti();
+}
+function closeCelebration() {
+  document.getElementById('celebrationOverlay').classList.remove('show');
+  document.querySelectorAll('.confetti-piece').forEach(function(c) { c.remove(); });
+}
+function launchConfetti() {
+  var colors = ['#FF5900', '#CFFF00', '#411517', '#22C55E', '#EF4444', '#F59E0B', '#8B5CF6', '#06B6D4'];
+  for (var i = 0; i < 80; i++) {
+    var c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDelay = Math.random() * 2 + 's';
+    c.style.animationDuration = (2 + Math.random() * 2) + 's';
+    c.style.width = (6 + Math.random() * 8) + 'px';
+    c.style.height = (6 + Math.random() * 8) + 'px';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(function(el) { el.remove(); }, 5000, c);
+  }
+}
+
+function renderDashboard() {
+  if (!dashboardData) return;
+  var s = dashboardData.summary;
+  document.getElementById('statDetailedTotal').textContent = fmtNum(s.totalDetailedRows);
+  document.getElementById('statPotentialFraud').textContent = fmtNum(s.potentialFraudCount);
+  document.getElementById('statFraudValue').textContent = fmtAED(s.potentialFraudValue);
+  document.getElementById('statFraudPct').textContent = s.potentialFraudPct + '%';
+  renderFraudTable();
+  renderEmailTable();
+  renderCharts();
+}
+
+function renderFraudTable() {
+  var tbody = document.getElementById('fraudTableBody');
+  var records = (dashboardData.potentialFraudRecords || []).slice();
+  var sRest = (document.getElementById('fraudSearchRestaurant').value || '').toLowerCase();
+  var sRID = (document.getElementById('fraudSearchRID').value || '').toLowerCase();
+  var sDate = (document.getElementById('fraudSearchDate').value || '').toLowerCase();
+  var sEmail = (document.getElementById('fraudSearchEmail').value || '').toLowerCase();
+  if (sRest) records = records.filter(function(r) { return (r.restaurant || '').toLowerCase().indexOf(sRest) >= 0; });
+  if (sRID) records = records.filter(function(r) { return (r.restaurantId || '').toLowerCase().indexOf(sRID) >= 0; });
+  if (sDate) records = records.filter(function(r) { return (r.dateTime || '').toLowerCase().indexOf(sDate) >= 0; });
+  if (sEmail) records = records.filter(function(r) { return (r.customerEmail || '').toLowerCase().indexOf(sEmail) >= 0; });
+  records.sort(function(a, b) {
+    var va = a[fraudSortField], vb = b[fraudSortField];
+    if (typeof va === 'number' && typeof vb === 'number') return fraudSortAsc ? va - vb : vb - va;
+    va = String(va || ''); vb = String(vb || '');
+    return fraudSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+  var html = '';
+  for (var i = 0; i < records.length; i++) {
+    var r = records[i];
+    html += '<tr><td>' + (i+1) + '</td><td>' + r.restaurantId + '</td><td>' + r.branchId + '</td><td>' + r.restaurant + '</td><td>' + r.branch + '</td><td>' + r.orderId + '</td><td>' + stripTime(r.dateTime) + '</td><td>' + (r.paymentMethod||'') + '</td><td>' + (r.status||'') + '</td><td>' + (r.serviceType||'') + '</td><td>' + fmtAED(r.subTotal) + '</td><td style="font-weight:600;color:var(--danger);">' + fmtAED(r.totalSale) + '</td><td>' + fmtAED(r.netPayment) + '</td><td><span class="badge badge-warning">' + (r.customerGroup||'-') + '</span></td><td>' + (r.customerAccount||'-') + '</td><td style="font-size:12px;">' + (r.customerEmail||'-') + '</td><td style="font-size:11px;color:var(--text-muted);max-width:300px;white-space:normal;">' + r.reasons + '</td></tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function filterFraudTable() { renderFraudTable(); }
+function clearFraudFilters() {
+  document.getElementById('fraudSearchRestaurant').value = '';
+  document.getElementById('fraudSearchRID').value = '';
+  document.getElementById('fraudSearchDate').value = '';
+  document.getElementById('fraudSearchEmail').value = '';
+  renderFraudTable();
+}
+function sortFraudTable(field) {
+  if (fraudSortField === field) fraudSortAsc = !fraudSortAsc;
+  else { fraudSortField = field; fraudSortAsc = false; }
+  renderFraudTable();
+}
+
+function renderEmailTable() {
+  var tbody = document.getElementById('emailTableBody');
+  var emails = (dashboardData.checkoutEmailTop20 || []).slice();
+  var search = (document.getElementById('emailSearch').value || '').toLowerCase();
+  if (search) emails = emails.filter(function(e) { return (e.email || '').toLowerCase().indexOf(search) >= 0; });
+  emails.sort(function(a, b) {
+    if (emailSortField === 'email') return emailSortAsc ? (a.email||'').localeCompare(b.email||'') : (b.email||'').localeCompare(a.email||'');
+    if (emailSortField === 'firstSeen' || emailSortField === 'lastSeen') return emailSortAsc ? (a[emailSortField]||'').localeCompare(b[emailSortField]||'') : (b[emailSortField]||'').localeCompare(a[emailSortField]||'');
+    var va = a[emailSortField] || 0, vb = b[emailSortField] || 0;
+    return emailSortAsc ? va - vb : vb - va;
+  });
+  var html = '';
+  for (var i = 0; i < emails.length; i++) {
+    var e = emails[i];
+    html += '<tr><td>' + (i+1) + '</td><td style="font-weight:500;">' + e.email + '</td><td><span class="badge badge-danger">' + e.count + '</span></td><td>' + fmtAED(e.totalAmount) + '</td><td><span class="badge ' + (e.maxBurst > 3 ? 'badge-danger' : 'badge-warning') + '">' + e.maxBurst + '</span></td><td style="font-size:12px;">' + (e.firstSeen||'-') + '</td><td style="font-size:12px;">' + (e.lastSeen||'-') + '</td></tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function filterEmailTable() { renderEmailTable(); }
+function sortEmailTable(field) {
+  if (field === 'rank') return;
+  if (emailSortField === field) emailSortAsc = !emailSortAsc;
+  else { emailSortField = field; emailSortAsc = false; }
+  renderEmailTable();
+}
+
+function groupBy(records, keyFn) {
+  var map = {};
+  for (var i = 0; i < records.length; i++) {
+    var k = keyFn(records[i]) || '(blank)';
+    if (!map[k]) map[k] = { count: 0, total: 0 };
+    map[k].count++; map[k].total += records[i].totalSale || 0;
+  }
+  return Object.entries(map).sort(function(a,b) { return b[1].total - a[1].total; })
+    .map(function(e) { return { name: e[0], count: e[1].count, total: Math.round(e[1].total * 100) / 100 }; });
+}
+
+function renderChartsFromRecords(records) {
+  Object.values(charts).forEach(function(c) { c.destroy(); });
+  charts = {};
+  charts.group = createDoughnutChart('chartGroup', groupBy(records, function(r){return r.customerGroup;}), 'customerGroup');
+  var dateData = groupBy(records, function(r){return (r.dateTime||'').substring(0,11);});
+  dateData.sort(function(a,b){return a.name.localeCompare(b.name);});
+  charts.date = createBarChart('chartDate', dateData, 'date');
+  charts.restaurant = createHBarChart('chartRestaurant', groupBy(records, function(r){return r.restaurant;}).slice(0,10), 'restaurant');
+  charts.branch = createComboChart('chartBranch', groupBy(records, function(r){return r.branch;}).slice(0,10), 'branch');
+  renderEmailChart();
+}
+
+function renderCharts() { renderChartsFromRecords(dashboardData.potentialFraudRecords || []); }
+
+function createDoughnutChart(id, data, df) {
+  return new Chart(document.getElementById(id), { type:'doughnut', data:{ labels:data.slice(0,8).map(function(g){return g.name;}), datasets:[{data:data.slice(0,8).map(function(g){return g.total;}), backgroundColor:['#FF5900','#411517','#CFFF00','#F59E0B','#EF4444','#8B5CF6','#06B6D4','#EC4899'], borderWidth:0}]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right',labels:{font:{family:'Inter',size:11}}}}, onClick:function(evt,items){if(items.length>0)applyDrillDown(df,data[items[0].index].name);}}});
+}
+function createBarChart(id, data, df) {
+  return new Chart(document.getElementById(id), { type:'bar', data:{ labels:data.slice(0,15).map(function(d){return d.name;}), datasets:[{label:'Fraud Amount (AED)',data:data.slice(0,15).map(function(d){return d.total;}), backgroundColor:'#FF590033',borderColor:'#FF5900',borderWidth:2,borderRadius:6}]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{font:{family:'Inter',size:10},maxRotation:45}},y:{grid:{display:false},ticks:{font:{family:'Inter',size:11}}}}, onClick:function(evt,items){if(items.length>0)applyDrillDown(df,data[items[0].index].name);}}});
+}
+function createHBarChart(id, data, df) {
+  return new Chart(document.getElementById(id), { type:'bar', data:{ labels:data.map(function(r){return r.name.length>20?r.name.substring(0,20)+'...':r.name;}), datasets:[{label:'Fraud Amount (AED)',data:data.map(function(r){return r.total;}), backgroundColor:'#FF590033',borderColor:'#FF5900',borderWidth:2,borderRadius:6}]}, options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:11}}},y:{grid:{display:false},ticks:{font:{family:'Inter',size:11}}}}, onClick:function(evt,items){if(items.length>0)applyDrillDown(df,data[items[0].index].name);}}});
+}
+function createComboChart(id, data, df) {
+  return new Chart(document.getElementById(id), { type:'bar', data:{ labels:data.map(function(b){return b.name.length>30?b.name.substring(0,30)+'...':b.name;}), datasets:[{label:'Count',data:data.map(function(b){return b.count;}),backgroundColor:'#FF5900',borderRadius:4,yAxisID:'y'},{label:'Total (AED)',data:data.map(function(b){return b.total;}),backgroundColor:'#CFFF0066',borderColor:'#9AB700',borderWidth:2,borderRadius:4,yAxisID:'y1',type:'line'}]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{font:{family:'Inter',size:11}}}}, scales:{x:{ticks:{font:{family:'Inter',size:10},maxRotation:45}},y:{position:'left',title:{display:true,text:'Count'}},y1:{position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'AED'}}}, onClick:function(evt,items){if(items.length>0)applyDrillDown(df,data[items[0].index].name);}}});
+}
+function renderEmailChart() {
+  var emailData = dashboardData.checkoutEmailTop20 || [];
+  if (charts.emails) charts.emails.destroy();
+  charts.emails = new Chart(document.getElementById('chartEmails'), { type:'bar', data:{ labels:emailData.map(function(e){return e.email.length>25?e.email.substring(0,25)+'...':e.email;}), datasets:[{label:'Order Count',data:emailData.map(function(e){return e.count;}), backgroundColor:emailData.map(function(e){return e.maxBurst>3?'#EF444488':'#FF590088';}), borderColor:emailData.map(function(e){return e.maxBurst>3?'#EF4444':'#FF5900';}), borderWidth:2,borderRadius:4}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{family:'Inter',size:9},maxRotation:60}},y:{title:{display:true,text:'Orders'}}}}});
+}
+
+/* ============================================================
+   UPLOAD (in-memory)
+   ============================================================ */
+function selectFolder(el) {
+  document.querySelectorAll('.folder-tab').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  currentFolder = el.dataset.folder;
+}
+function handleDrop(e) {
+  e.preventDefault();
+  e.target.closest('.upload-zone').classList.remove('dragover');
+  uploadFiles(e.dataTransfer.files);
+}
+
+async function uploadFilesToFolder(folder, files) {
+  if (!files.length) return;
+  var folderName = folderKeyMap[folder];
+  if (!folderName) return;
+  var count = 0;
+  for (var i = 0; i < files.length; i++) {
+    var buf = await files[i].arrayBuffer();
+    uploadedFiles[folderName].push({ name: files[i].name, size: files[i].size, data: new Uint8Array(buf), dateUploaded: new Date().toISOString() });
+    count++;
+  }
+  toast(count + ' file(s) uploaded to ' + folderName, 'success');
+  loadFileList();
+}
+
+async function uploadFiles(files) {
+  if (!files.length) return;
+  var prog = document.getElementById('uploadProgress');
+  prog.style.display = 'block';
+  document.getElementById('uploadFill').style.width = '30%';
+  var folderName = folderKeyMap[currentFolder];
+  document.getElementById('uploadStatus').textContent = 'Uploading ' + files.length + ' file(s) to ' + (folderName || currentFolder) + '...';
+  var count = 0;
+  for (var i = 0; i < files.length; i++) {
+    var buf = await files[i].arrayBuffer();
+    uploadedFiles[folderName].push({ name: files[i].name, size: files[i].size, data: new Uint8Array(buf), dateUploaded: new Date().toISOString() });
+    count++;
+  }
+  document.getElementById('uploadFill').style.width = '100%';
+  var msg = count + ' file(s) uploaded to ' + folderName;
+  document.getElementById('uploadStatus').textContent = msg;
+  toast(msg, 'success');
+  loadFileList();
+  setTimeout(function(){ prog.style.display = 'none'; }, 3000);
+}
+
+function loadFileList() {
+  var container = document.getElementById('fileListContainer');
+  var html = '<p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Source: Browser (local uploads)</p>';
+  var folders = ['Detailed Reports','Checkout','AX365','Branch Inquiry'];
+  for (var fi = 0; fi < folders.length; fi++) {
+    var folder = folders[fi], files = uploadedFiles[folder] || [];
+    html += '<h4 style="margin:12px 0 6px;font-size:13px;color:var(--primary);">&#x1F4C1; ' + folder + '</h4>';
+    if (!files.length) { html += '<p style="font-size:12px;color:var(--text-muted);margin-left:20px;">No files</p>'; continue; }
+    html += '<ul class="file-list">';
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i], size = f.size > 1048576 ? (f.size/1048576).toFixed(1)+' MB' : (f.size/1024).toFixed(0)+' KB';
+      html += '<li class="file-item"><span class="name">&#x1F4C4; ' + f.name + '</span><span class="meta">' + size + '</span></li>';
+    }
+    html += '</ul>';
+  }
+  container.innerHTML = html;
+}
+
+/* ============================================================
+   RUN ANALYSIS (client-side, chunked to prevent UI freeze)
+   ============================================================ */
+async function runAnalysis() {
+  var btn = document.getElementById('btnRun');
+  btn.disabled = true;
+  btn.innerHTML = '&#x23F3; Running...';
+  var prog = document.getElementById('runProgress');
+  prog.style.display = 'block';
+  document.getElementById('runFill').style.width = '10%';
+  document.getElementById('runLog').innerHTML = '<div class="log-line">Starting fraud analysis...</div>';
+  await yieldToUI();
+
+  try {
+    var t0 = performance.now();
+    var fileErrors = [];
+
+    engineLog('=== TALABAT FRAUD HUNTER (Browser) ===');
+    document.getElementById('runFill').style.width = '15%';
+    await yieldToUI();
+
+    engineLog('[1/7] Reading Detailed Reports...');
+    var records, totalDetailedRows;
+    try {
+      var result = readDetailedReportsFromMemory();
+      records = result.records; totalDetailedRows = result.totalDetailedRows;
+    } catch (err) {
+      fileErrors.push({ step: 'Detailed Reports', error: err.message, fix: 'Upload at least one .xlsx file to Detailed Reports.' });
+      throw new Error('Detailed Reports failed: ' + err.message);
+    }
+    document.getElementById('runFill').style.width = '30%';
+    await yieldToUI();
+
+    engineLog('[2/7] Reading Branch Inquiry...');
+    var branchInq = {};
+    try { branchInq = readBranchInquiryFromMemory(); } catch (err) {
+      fileErrors.push({ step: 'Branch Inquiry', error: err.message, fix: 'Check Branch Inquiry .xlsx file.' });
+      engineLog('  WARNING: Branch Inquiry failed, continuing without it.');
+    }
+    document.getElementById('runFill').style.width = '40%';
+    await yieldToUI();
+
+    engineLog('[3/7] Reading AX365...');
+    var ax365 = {};
+    try { ax365 = readAX365FromMemory(); } catch (err) {
+      fileErrors.push({ step: 'AX365', error: err.message, fix: 'Check AX365 .xlsx file.' });
+      engineLog('  WARNING: AX365 failed, continuing without it.');
+    }
+    document.getElementById('runFill').style.width = '50%';
+    await yieldToUI();
+
+    engineLog('[4/7] Reading Checkout (matching orders)...');
+    var orderIds = records.map(function(r) { return r['Order Id']; });
+    var checkout = {};
+    try { checkout = readCheckoutForOrdersFromMemory(orderIds); } catch (err) {
+      fileErrors.push({ step: 'Checkout', error: err.message, fix: 'Ensure .csv files in Checkout have correct headers.' });
+      engineLog('  WARNING: Checkout failed, continuing without it.');
+    }
+    document.getElementById('runFill').style.width = '60%';
+    await yieldToUI();
+
+    engineLog('[5/7] Merging and applying fraud rules...');
+    mergeData(records, branchInq, ax365, checkout);
+    applyFraudRules(records);
+    var potentialFraud = applyPotentialFraudFilter(records);
+    latestAllRecords = records;
+    document.getElementById('runFill').style.width = '70%';
+    await yieldToUI();
+
+    engineLog('[6/7] Scanning checkout emails...');
+    var allCheckoutEmails = [];
+    try { allCheckoutEmails = readCheckoutEmailStatsFromMemory(); } catch (err) {
+      fileErrors.push({ step: 'Checkout email stats', error: err.message });
+      engineLog('  WARNING: Checkout email stats failed, continuing without it.');
+    }
+    var checkoutEmailTop20 = allCheckoutEmails.slice(0, 20);
+    document.getElementById('runFill').style.width = '85%';
+
+    engineLog('[7/7] Building dashboard data...');
+    potentialFraud.sort(function(a, b) {
+      var diff = (b['Total Sale'] || 0) - (a['Total Sale'] || 0);
+      if (diff !== 0) return diff;
+      var ridCmp = (a['Restaurant Id'] || '').localeCompare(b['Restaurant Id'] || '');
+      if (ridCmp !== 0) return ridCmp;
+      return (a['Customer Email'] || '').localeCompare(b['Customer Email'] || '');
+    });
+
+    var potentialFraudTotal = potentialFraud.reduce(function(s, r) { return s + (r['Total Sale'] || 0); }, 0);
+    var fraudPct = totalDetailedRows > 0 ? ((potentialFraud.length / totalDetailedRows) * 100).toFixed(2) : '0.00';
+
+    dashboardData = {
+      summary: { totalDetailedRows: totalDetailedRows, potentialFraudCount: potentialFraud.length, potentialFraudValue: potentialFraudTotal, potentialFraudPct: fraudPct },
+      potentialFraudRecords: potentialFraud.map(function(r, i) {
+        return { serial: i+1, restaurantId: r['Restaurant Id'], branchId: r['Branch Id'], restaurant: r['Restaurant'], branch: r['Branch'], orderId: r['Order Id'], dateTime: r['Date / Time'], paymentMethod: r['Payment Method']||'', status: r['Status']||'', serviceType: r['Service Type']||'', subTotal: r['SubTotal'], totalSale: r['Total Sale'], netPayment: r['Net Payment Per Order'], customerGroup: r['Customer group'], customerAccount: r['Customer account'], customerEmail: r['Customer Email'], reasons: r['Potential Fraud Reasons'] };
+      }),
+      byCustomerGroup: (function(){ var map={}; potentialFraud.forEach(function(r){ var k=r['Customer group']||'(blank)'; if(!map[k])map[k]={count:0,total:0}; map[k].count++; map[k].total+=r['Total Sale']||0; }); return Object.entries(map).sort(function(a,b){return b[1].total-a[1].total;}).map(function(e){return{name:e[0],count:e[1].count,total:Math.round(e[1].total*100)/100};}); })(),
+      byDate: (function(){ var map={}; potentialFraud.forEach(function(r){ var k=dateOnlyDDMMMYYYY(r['Date / Time']); if(!map[k])map[k]={count:0,total:0}; map[k].count++; map[k].total+=r['Total Sale']||0; }); return Object.entries(map).sort(function(a,b){return a[0].localeCompare(b[0]);}).map(function(e){return{name:e[0],count:e[1].count,total:Math.round(e[1].total*100)/100};}); })(),
+      checkoutEmailTop20: checkoutEmailTop20,
+      fileErrors: fileErrors.length > 0 ? fileErrors : null,
+      generatedAt: new Date().toISOString()
+    };
+
+    try { localStorage.setItem('fraudHunterResults', JSON.stringify(dashboardData)); } catch(e) { engineLog('  Note: Results too large for localStorage cache.'); }
+
+    document.getElementById('runFill').style.width = '100%';
+    var elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+    engineLog('');
+    engineLog('Done in ' + elapsed + 's | ' + totalDetailedRows + ' total orders | ' + potentialFraud.length + ' potential fraud | ' + checkoutEmailTop20.length + ' suspicious emails');
+    document.getElementById('runLog').innerHTML += '<div class="log-line" style="color:#CFFF00;">&#x2705; Analysis complete!</div>';
+
+    if (fileErrors.length > 0) {
+      fileErrors.forEach(function(e) { engineLog('  WARNING [' + e.step + '] ' + e.error); });
+      toast('Analysis complete with ' + fileErrors.length + ' warning(s).', 'info');
+    } else {
+      toast('Analysis complete! View the dashboard.', 'success');
+    }
+    renderDashboard();
+    document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date(dashboardData.generatedAt).toLocaleString();
+    checkCelebration();
+  } catch (e) {
+    document.getElementById('runLog').innerHTML += '<div class="log-line" style="color:#EF4444;">&#x274C; Error: ' + e.message + '</div>';
+    toast('Analysis failed: ' + e.message, 'error');
+    console.error('Fraud Engine Error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#x1F680; Run Analysis';
+  }
+}
+
+/* ============================================================
+   DOWNLOAD EXCEL (SheetJS)
+   ============================================================ */
+function downloadExcel() {
+  if (!dashboardData) { toast('No analysis results. Run analysis first.', 'error'); return; }
+  var wb = XLSX.utils.book_new();
+  if (latestAllRecords) {
+    var mainCols = ['Restaurant Id','Branch Id','Restaurant','Branch','Order Id','Date / Time','Payment Method','Status','Service Type','SubTotal','Total Sale','Net Payment Per Order','Customer group','Customer account','Branch AX Code','MSD Checker','Action Type','Response Description','Customer Email','Checkout Amount','Potential Fraud','Fraud Reasons'];
+    var mainData = [mainCols];
+    latestAllRecords.forEach(function(rec) { mainData.push(mainCols.map(function(c) { return rec[c] !== undefined ? rec[c] : ''; })); });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(mainData), 'Main Data');
+  }
+  var fraudCols = ['Serial','Restaurant Id','Branch Id','Restaurant','Branch','Order Id','Date / Time','Payment Method','Status','Service Type','SubTotal','Total Sale','Net Payment Per Order','Customer Group','Customer Account','Customer Email','Potential Fraud Reasons'];
+  var fraudData = [fraudCols];
+  (dashboardData.potentialFraudRecords || []).forEach(function(r, i) { fraudData.push([i+1, r.restaurantId, r.branchId, r.restaurant, r.branch, r.orderId, stripTime(r.dateTime), r.paymentMethod, r.status, r.serviceType, r.subTotal, r.totalSale, r.netPayment, r.customerGroup, r.customerAccount, r.customerEmail, r.reasons]); });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(fraudData), 'Potential Fraud');
+  var s = dashboardData.summary;
+  var d1 = [['FRAUD ANALYSIS DASHBOARD'],[],['Metric','Value'],['Total Orders',s.totalDetailedRows],['Potential Fraud Count',s.potentialFraudCount],['Potential Fraud %',s.potentialFraudPct+'%'],['Potential Fraud Amount (AED)',s.potentialFraudValue]];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(d1), 'Dashboard 1');
+  var d2 = [['TOP 20 SUSPICIOUS EMAILS'],[],['Rank','Customer Email','Order Count','Total Amount','Max Burst','First Seen','Last Seen']];
+  (dashboardData.checkoutEmailTop20 || []).forEach(function(e, i) { d2.push([i+1, e.email, e.count, e.totalAmount, e.maxBurst, e.firstSeen, e.lastSeen]); });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(d2), 'Dashboard 2');
+  XLSX.writeFile(wb, 'Fraud_Analysis_Output.xlsx');
+  toast('Excel downloaded!', 'success');
+}
+
+function downloadPDF() {
+  var activePage = document.querySelector('.page.active');
+  if (!activePage) return;
+  var activeNav = document.querySelector('.nav-item.active');
+  var tabName = activeNav ? activeNav.textContent.trim() : 'Report';
+  var safeName = tabName.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
+  toast('Generating PDF for "' + tabName + '"...', 'info');
+  html2pdf().set({ margin: 10, filename: 'Fraud_Analysis_' + safeName + '.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' }}).from(activePage).save().then(function() { toast('PDF downloaded!', 'success'); });
+}
+
+function exportGoogleSheets() {
+  window.open('https://drive.google.com/drive/folders/1-oMUrBczTD1tv5mSyRFe00_pTlDjg1yH', '_blank');
+  toast('Download Excel first, then upload to Google Drive.', 'info');
+}
+
+/* ============================================================
+   COPY FOR SLACK
+   ============================================================ */
+function copyForSlack() {
+  if (!dashboardData) { toast('No analysis results. Run analysis first.', 'error'); return; }
+  var s = dashboardData.summary;
+  var msg = '🚨 Fraud Analysis Report\n' +
+    'Total Orders: ' + Number(s.totalDetailedRows).toLocaleString() + '\n' +
+    'Potential Fraud: ' + s.potentialFraudCount + ' orders\n' +
+    'Fraud Amount: AED ' + Number(s.potentialFraudValue).toLocaleString(undefined,{minimumFractionDigits:2}) + '\n' +
+    'Fraud %: ' + s.potentialFraudPct + '%\n\n';
+  if (dashboardData.checkoutEmailTop20 && dashboardData.checkoutEmailTop20.length) {
+    msg += 'Top Suspicious Emails:\n';
+    dashboardData.checkoutEmailTop20.slice(0, 10).forEach(function(e, i) { msg += (i+1) + '. ' + e.email + ' (' + e.count + ' orders)\n'; });
+  }
+  navigator.clipboard.writeText(msg).then(function() { toast('Report copied to clipboard! Paste in Slack.', 'success'); });
+}
+
+/* ============================================================
+   EMAIL (mailto:)
+   ============================================================ */
+function sendEmail() {
+  var to = document.getElementById('emailTo').value;
+  var cc = document.getElementById('emailCc').value;
+  var subject = document.getElementById('emailSubject').value || 'Fraud Alert - Suspicious Customer Emails';
+  if (!to) { toast('TO field is required', 'error'); return; }
+  var body = 'Dear Team,\n\nPlease verify the emails below that have suspicious transactions.\n\n';
+  if (dashboardData && dashboardData.checkoutEmailTop20) {
+    body += 'Top 20 Suspicious Customer Emails:\n';
+    dashboardData.checkoutEmailTop20.forEach(function(e, i) { body += (i+1) + '. ' + e.email + ' (' + e.count + ' orders, AED ' + e.totalAmount.toLocaleString() + ')\n'; });
+  }
+  body += '\nRegards,\nUAE Talabat Finance';
+  var mailtoUrl = 'mailto:' + encodeURIComponent(to);
+  var params = [];
+  if (cc) params.push('cc=' + encodeURIComponent(cc));
+  params.push('subject=' + encodeURIComponent(subject));
+  params.push('body=' + encodeURIComponent(body));
+  mailtoUrl += '?' + params.join('&');
+  window.open(mailtoUrl, '_blank');
+  toast('Email client opened!', 'success');
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+window.addEventListener('DOMContentLoaded', function() {
+  loadResults();
+  loadFileList();
+});
+</script>
+</body>
+</html>
